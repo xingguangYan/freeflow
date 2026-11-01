@@ -26,7 +26,7 @@ async function waitForLogin(ctx, page, platform, accountId, minutes = 5) {
   await page.goto(platform.loginUrl, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {});
   const started = Date.now();
   while (Date.now() - started < minutes * 60 * 1000) {
-    if (await auto.looksLoggedIn(ctx, platform, page.url())) return true;
+    if (await auto.checkLoggedIn(ctx, platform, page)) return true;
     await page.waitForTimeout(2500).catch(() => {});
   }
   return false;
@@ -54,6 +54,26 @@ async function publishToAccount(account, article, coverPath) {
     await auto.closeCtx(ctx);
     return { status: 'failed', message: '编辑器页面打不开（可能登录已过期）' };
   }
+  // 简书这类平台：先取当前文集 ID，再跳到「新建笔记」空白页，避免覆盖旧草稿
+  if (platform.newNoteUrl) {
+    for (let i = 0; i < 12 && !/notebooks\/\d+/.test(page.url()); i++) await page.waitForTimeout(800);
+    const nu = platform.newNoteUrl(page.url());
+    if (nu) {
+      await page.goto(nu, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {});
+      await page.waitForTimeout(2500);
+      log('', account.id, 'info', '已打开新建草稿页');
+    }
+  }
+  // 公众号编辑器 URL 需要动态 token：先打开首页，再拼出编辑页
+  if (platform.editorUrlFrom) {
+    for (let i = 0; i < 12 && !/token=/.test(page.url()); i++) await page.waitForTimeout(800);
+    const eu = platform.editorUrlFrom(page.url());
+    if (eu) {
+      await page.goto(eu, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {});
+      await page.waitForTimeout(2500);
+      log('', account.id, 'info', '已进入编辑器');
+    }
+  }
   // 登录态检查：撞到登录墙就打开登录页等用户登录，登完自动重进编辑器继续发
   if (await auto.hitLoginWall(ctx, platform, page)) {
     const loggedIn = await waitForLogin(ctx, page, platform, account.id, 5);
@@ -76,22 +96,43 @@ async function publishToAccount(account, article, coverPath) {
       return { status: 'failed', message: '登录后编辑器页面仍打不开' };
     }
   }
-  // 入口按钮（如「新建图文」），可能弹新标签页
-  if (platform.preClickText && platform.preClickText.length) {
+  // 必须在已有草稿里新建的平台（如简书）先点「新建文章」
+  if (platform.newDraftFirst && platform.preClickText && platform.preClickText.length) {
+    const clicked = await auto.clickIfAny(cur, platform.preClickText, 3000);
+    if (clicked) {
+      log('', account.id, 'info', `点击入口「${clicked}」创建新草稿`);
+      await cur.waitForTimeout(1500);
+    }
+  }
+  // 等编辑器渲染；公众号这类列表页需要先点「新建图文」，会弹新标签页
+  let ready = await auto.waitForEditor(cur, platform, 8000);
+  if (!ready && platform.preClickText && platform.preClickText.length) {
     const clicked = await auto.clickIfAny(page, platform.preClickText, 3000);
     if (clicked) {
       log('', account.id, 'info', `点击入口「${clicked}」`);
       const popup = await auto.waitForPopup(ctx, page, 5000);
       if (popup !== page) { cur = popup; log('', account.id, 'info', '已切换到新打开的编辑页'); }
-      await cur.waitForTimeout(1500);
+      ready = await auto.waitForEditor(cur, platform, 25000);
     }
   }
+  // 小红书这类必须先传图才会出现编辑区的平台
+  let coverOk = false;
+  if (platform.mediaFirst && coverPath && fs.existsSync(coverPath)) {
+    coverOk = await auto.uploadCover(cur, platform, coverPath);
+    if (coverOk) {
+      log('', account.id, 'info', '封面图已上传，等待编辑器生成');
+      await cur.waitForTimeout(4000);
+      ready = await auto.waitForEditor(cur, platform, 25000);
+    }
+  }
+  if (!ready) ready = await auto.waitForEditor(cur, platform, 12000);
+  if (!ready) log('', account.id, 'warn', '编辑器识别较慢，仍尝试填充');
   const accName = account.name, pName = platform.name;
-  let filledTitle = false, filledContent = false, coverOk = false;
+  let filledTitle = false, filledContent = false;
   try {
     filledTitle = await auto.fillTitle(cur, platform, article.title);
     filledContent = await auto.fillContent(cur, platform, auto.inlineLocalImages(article.content));
-    if (coverPath && fs.existsSync(coverPath)) coverOk = await auto.uploadCover(cur, platform, coverPath);
+    if (!platform.noCoverUpload && coverPath && fs.existsSync(coverPath)) coverOk = await auto.uploadCover(cur, platform, coverPath);
   } catch (e) {
     log('', account.id, 'error', '填充异常: ' + e.message);
   }
@@ -112,13 +153,23 @@ async function publishToAccount(account, article, coverPath) {
     return { status: 'manual', message: '自动填充未成功，请手动粘贴发布（内容已复制）', keepCtx: ctx, page: cur };
   }
 
-  const btn = await auto.clickPublish(cur);
+  await cur.waitForTimeout(1500);
+  const btn = platform.previewThenPublish
+    ? await auto.clickPreviewThenPublish(cur)
+    : await auto.clickPublishRetry(cur, 15000);
   let ok = false, detail = '已点击「' + (btn || '?') + '」';
   if (btn) {
     // 等待发布成功：常见提示或地址栏变化
-    const hit = await cur.waitForSelector('text=/发布成功|已发布|发布完成|提交成功/', { timeout: 20000 }).catch(() => null);
+    let hit = await cur.waitForSelector('text=/发布成功|已发布|发布完成|提交成功/', { timeout: 12000 }).catch(() => null);
+    if (!hit) {
+      const cbtn = await auto.clickConfirm(cur);
+      if (cbtn) {
+        detail += `，已确认「${cbtn}」`;
+        hit = await cur.waitForSelector('text=/发布成功|已发布|发布完成|提交成功/', { timeout: 15000 }).catch(() => null);
+      }
+    }
     ok = !!hit;
-    if (!ok) ok = /success|published|manage|list|detail/.test(cur.url());
+    if (!ok) ok = /success|published|manage|list|detail|articles|content/.test(cur.url());
     if (!ok) detail += '；未检测到明确成功提示，请到平台后台核对';
   } else {
     detail = '没找到发布按钮，可能需要手动点';
@@ -171,13 +222,14 @@ async function publishVideoToAccount(account, article, videoPath) {
       return { status: 'failed', message: '登录后上传页仍打不开' };
     }
   }
-  if (platform.preClickText && platform.preClickText.length) {
+  let uploadReady = await auto.pickVisibleIn(cur, [platform.uploadInput || 'input[type="file"]']);
+  if (!uploadReady && platform.preClickText && platform.preClickText.length) {
     const clicked = await auto.clickIfAny(page, platform.preClickText, 3000);
     if (clicked) {
       log('', account.id, 'info', `点击入口「${clicked}」`);
       const popup = await auto.waitForPopup(ctx, page, 5000);
       if (popup !== page) { cur = popup; log('', account.id, 'info', '已切换到新打开的上传页'); }
-      await cur.waitForTimeout(1500);
+      uploadReady = await auto.pickVisibleIn(cur, [platform.uploadInput || 'input[type="file"]']);
     }
   }
 
@@ -215,11 +267,20 @@ async function publishVideoToAccount(account, article, videoPath) {
     log('', account.id, 'warn', '填写失败，已降级手动模式（内容已复制到剪贴板）');
     return { status: 'manual', message: '自动填写未成功，请手动完成（内容已复制）', keepCtx: ctx, page: cur };
   }
-  const btn = await auto.clickPublish(cur);
+  await cur.waitForTimeout(1500);
+  const btn = await auto.clickPublishRetry(cur, 15000);
   let ok = false, detail = '已点击「' + (btn || '?') + '」';
   if (btn) {
-    const hit = await cur.waitForSelector('text=/发布成功|已发布|发布完成|投稿成功|提交成功/', { timeout: 20000 }).catch(() => null);
+    let hit = await cur.waitForSelector('text=/发布成功|已发布|发布完成|投稿成功|提交成功/', { timeout: 12000 }).catch(() => null);
+    if (!hit) {
+      const cbtn = await auto.clickConfirm(cur);
+      if (cbtn) {
+        detail += `，已确认「${cbtn}」`;
+        hit = await cur.waitForSelector('text=/发布成功|已发布|发布完成|投稿成功|提交成功/', { timeout: 15000 }).catch(() => null);
+      }
+    }
     ok = !!hit;
+    if (!ok) ok = /success|published|manage|list|detail|content/.test(cur.url());
     if (!ok) detail += '；未检测到明确成功提示，请到平台后台核对';
   } else { detail = '没找到发布按钮，可能需要手动点'; }
   log('', account.id, ok ? 'info' : 'warn', `${platform.name}(${account.name}) 视频${ok ? '发布成功' : detail}`);

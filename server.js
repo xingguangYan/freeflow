@@ -84,7 +84,7 @@ app.post('/api/accounts/:id/login', async (req, res) => {
     timer = setInterval(async () => {
       if (session.closed || session.detected) { clearInterval(timer); return; }
       try {
-        if (await auto.looksLoggedIn(ctx, p, page.url())) {
+        if (await auto.checkLoggedIn(ctx, p, page)) {
           session.detected = true; clearInterval(timer);
           await sleep(2000); // 多等几秒让 cookie 落盘
           await auto.closeCtx(ctx);
@@ -95,7 +95,7 @@ app.post('/api/accounts/:id/login', async (req, res) => {
           clearInterval(timer);
           if (!session.manual) {
             // 超时前做一次 cookie 兜底：很多时候其实已经登上了，只是网址没匹配上
-            if (await auto.hasLoginCookies(ctx, p)) {
+            if (await auto.checkLoggedIn(ctx, p, page)) {
               session.detected = true;
               await auto.closeCtx(ctx);
               session.closed = true;
@@ -142,7 +142,7 @@ app.post('/api/accounts/:id/check', async (req, res) => {
     const page = ctx.pages()[0] || await ctx.newPage();
     await page.goto(p.loginUrl, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {});
     await page.waitForTimeout(1500).catch(() => {});
-    const ok = await auto.looksLoggedIn(ctx, p, page.url());
+    const ok = await auto.checkLoggedIn(ctx, p, page);
     await auto.closeCtx(ctx);
     touchAccount(acc.id, ok
       ? { status: 'loggedIn', lastLoginAt: Date.now(), loginSession: null }

@@ -15,7 +15,14 @@ module.exports = [
     loginUrl: 'https://mp.weixin.qq.com/',
     loggedInUrl: /mp\.weixin\.qq\.com\/cgi-bin\/(home|appmsg|appmsgpublish|message|profile)/,
     loginCookies: ['slave_sid', 'master_sid'],
-    editorUrls: ['https://mp.weixin.qq.com/cgi-bin/appmsg?t=media/appmsg_list&action=list&type=77&lang=zh_CN'],
+    editorUrls: ['https://mp.weixin.qq.com/'],
+    noCoverUpload: true,
+    editorUrlFrom: url => {
+      try {
+        const token = new URL(url).searchParams.get('token');
+        return token ? `https://mp.weixin.qq.com/cgi-bin/appmsg?t=media/appmsg_edit&action=edit&type=77&token=${token}&lang=zh_CN` : null;
+      } catch { return null; }
+    },
     preClickText: ['新建图文', '图文消息', '写新图文'],
     titleSelectors: ['#title', 'input[placeholder*="标题"]', '.cmp-title-input input', 'textarea[placeholder*="标题"]'],
     contentSelectors: ['#ueditor_0 .view', '.edui-body-container', '[contenteditable="true"]'],
@@ -27,8 +34,10 @@ module.exports = [
     loginUrl: 'https://mp.toutiao.com/profile_v4/index',
     loggedInUrl: /mp\.toutiao\.com\/profile_v4\/(index|graphic|manage|analysis)/,
     loginCookies: ['sessionid'],
-    editorUrls: ['https://mp.toutiao.com/profile_v4/graphic/articles', 'https://mp.toutiao.com/profile_v4/graphic/publish?type=news'],
+    editorUrls: ['https://mp.toutiao.com/profile_v4/graphic/publish?type=news', 'https://mp.toutiao.com/profile_v4/graphic/articles'],
     preClickText: ['发布文章', '写文章', '新文章'],
+    noCoverUpload: true,
+    previewThenPublish: true,
     titleSelectors: ['input[placeholder*="标题"]', '.article-title input', 'input[name="title"]'],
     contentSelectors: ['.ProseMirror', '[contenteditable="true"]'],
     contentType: 'richtext',
@@ -64,6 +73,8 @@ module.exports = [
     loggedInUrl: /creator\.xiaohongshu\.com\/(publish|home|creator\/|user\/)/,
     loginCookies: ['web_session', 'customer-sso-sid', 'galaxy_creator_session_id'],
     editorUrls: ['https://creator.xiaohongshu.com/publish/publish'],
+    preClickText: ['上传图文'],
+    mediaFirst: true,
     titleSelectors: ['input[placeholder*="标题"]', '#title', '.d-title input'],
     contentSelectors: ['textarea[placeholder*="正文"]', '#description', '[contenteditable="true"]'],
     contentType: 'richtext',
@@ -75,7 +86,7 @@ module.exports = [
     loginUrl: 'https://passport.bilibili.com/login',
     loggedInUrl: /(member\.bilibili\.com|bilibili\.com\/(home|v|read))/,
     loginCookies: ['SESSDATA'],
-    editorUrls: ['https://member.bilibili.com/article-text/home?not_checkout=1', 'https://member.bilibili.com/article-text/home'],
+    editorUrls: ['https://member.bilibili.com/york/read-editor?not_checkout=1', 'https://member.bilibili.com/york/read-editor'],
     titleSelectors: ['.article-title input', 'input[placeholder*="标题"]', 'input[name="title"]'],
     contentSelectors: ['.ql-editor', '#textarea', '[contenteditable="true"]', 'textarea'],
     contentType: 'markdown',
@@ -88,6 +99,10 @@ module.exports = [
     loginCookies: ['read_auth_token', 'remember_me_token', 'remember_user_token'],
     editorUrls: ['https://www.jianshu.com/writer/'],
     preClickText: ['新建文章', '写文章'],
+    newNoteUrl: url => {
+      const m = /notebooks\/(\d+)/.exec(url || '');
+      return m ? 'https://www.jianshu.com/writer#/notebooks/' + m[1] + '/notes/new' : null;
+    },
     titleSelectors: ['input[placeholder*="标题"]', '.ant-input', '#title'],
     contentSelectors: ['.CodeMirror', '.ace_editor', 'textarea', '[contenteditable="true"]'],
     contentType: 'markdown'
