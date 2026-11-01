@@ -1,0 +1,24 @@
+{
+  "name": "freeflow",
+  "version": "1.0.0",
+  "productName": "自由发",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-packager . 自由发 --platform=win32 --arch=x64 --icon=app.ico --out=release --overwrite --prune=true --ignore=^/crop_qr --ignore=^/alipay_raw --ignore=^/check_ui --ignore=^/shot_ --ignore=^/start.bat",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.3.0",
+    "playwright": "^1.64.1"
+  },
+  "devDependencies": {
+    "electron": "^45.2.1",
+    "electron-packager": "^17.1.2"
+  }
+}

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>自由发 · 自媒体多平台分发工具</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <aside>
+    <div class="brand">
+      <div class="logo">发</div>
+      <div class="tt"><b>自由发</b><span>多平台分发 · 本地免费</span></div>
+    </div>
+    <nav id="nav">
+      <button class="nav-item active" data-view="articles">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8.5 13.5h7M8.5 17.5h5"/></svg>
+        <span>文章</span>
+      </button>
+      <button class="nav-item" data-view="accounts">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.8 20c.4-3.2 3-5 6.2-5s5.8 1.8 6.2 5"/><path d="M17.2 8.6a3 3 0 0 1 0 5.6"/></svg>
+        <span>账号</span>
+      </button>
+      <button class="nav-item" data-view="publish">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2.5 11 13"/><path d="M21.5 2.5 15 21l-4.2-8.3L2.5 8.5z"/></svg>
+        <span>一键发布</span>
+      </button>
+      <button class="nav-item" data-view="materials">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.6" cy="8.8" r="1.6"/><path d="M21 15.5 16 10.5 6 20"/></svg>
+        <span>素材库</span>
+      </button>
+      <button class="nav-item" data-view="sensitive">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21.5s7.5-3.8 7.5-9.5V5.2L12 2.5 4.5 5.2v6.8c0 5.7 7.5 9.5 7.5 9.5z"/></svg>
+        <span>违禁词</span>
+      </button>
+      <button class="nav-item" data-view="logs">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M15 4.5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-12a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h4"/></svg>
+        <span>日志</span>
+      </button>
+    </nav>
+    <div class="tip-box">
+      <img src="alipay_qr.png" alt="支付宝打赏码">
+      <b>请作者喝杯咖啡</b>
+      <span>工具对你有帮助的话，扫码支持一下，这是我继续更新的动力 :)</span>
+    </div>
+    <div class="side-foot">所有数据保存在本机 data/ 目录，不经过任何第三方服务器。</div>
+  </aside>
+  <main>
+    <header>
+      <h1 id="viewTitle">文章</h1>
+      <div class="top-right">
+        <span id="topStats" class="muted"></span>
+        <span id="serverState" class="pill ok">本地服务运行中</span>
+      </div>
+    </header>
+
+    <section id="view-articles" class="view active">
+      <div class="split">
+        <div class="panel list-panel">
+          <div class="panel-head"><strong>文章列表</strong><button class="btn primary small" id="btnNewArticle">+ 新建</button></div>
+          <ul id="articleList" class="item-list"></ul>
+        </div>
+        <div class="panel editor-panel">
+          <div class="panel-head">
+            <strong id="editorTitle">未选择文章</strong>
+            <span>
+              <button class="btn small" id="btnScanArticle">违禁词检查</button>
+              <button class="btn primary small" id="btnSaveArticle">保存</button>
+            </span>
+          </div>
+          <input id="artTitle" placeholder="文章标题（各平台共用）">
+          <div class="type-row">
+            <label class="seg"><input type="radio" name="artType" value="article" checked> 图文</label>
+            <label class="seg"><input type="radio" name="artType" value="video"> 视频</label>
+          </div>
+          <div id="videoFields" class="video-fields" style="display:none">
+            <div class="vf-row">
+              <label>视频文件</label>
+              <input type="file" id="artVideoFile" accept="video/*">
+              <span class="muted">或本地路径</span>
+              <input id="artVideoPath" placeholder="D:\videos\demo.mp4" style="flex:1">
+              <button class="btn small" id="btnUsePath">登记</button>
+            </div>
+            <div class="vf-row">
+              <label>标签</label>
+              <input id="artTags" placeholder="逗号分隔，如：数码,测评,开箱" style="flex:1">
+            </div>
+            <div class="muted" style="padding:6px 16px 0">视频的「简介/文案」写在下方正文区，发布时会自动作为描述填入各平台。</div>
+            <div id="videoStatus" class="muted" style="padding:4px 16px 0;color:#177a45"></div>
+          </div>
+          <div class="toolbar" id="edToolbar">
+            <button data-cmd="bold" title="加粗"><b>B</b></button>
+            <button data-cmd="italic" title="斜体"><i>I</i></button>
+            <button data-cmd="h2" title="小标题">H2</button>
+            <button data-cmd="p" title="正文段落">正文</button>
+            <button data-cmd="insertImage" title="插入素材库图片">插入图片</button>
+            <button data-cmd="removeFormat" title="清除格式">清除格式</button>
+          </div>
+          <div id="artContent" contenteditable="true" class="editor" data-placeholder="写正文，也可以直接从 Word / 网页粘贴（保留格式）。"></div>
+          <div class="cover-row">
+            <label>封面图：</label>
+            <select id="artCover"><option value="">（不设置）</option></select>
+            <span id="coverThumb" class="cover-thumb"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-accounts" class="view">
+      <div class="panel">
+        <div class="panel-head"><strong>添加账号</strong><span class="muted">每个账号一个独立浏览器配置，登录后自动保存在本机</span></div>
+        <div class="add-form">
+          <select id="newAccPlatform"></select>
+          <input id="newAccName" placeholder="账号备注名，如「大号」">
+          <button class="btn primary" id="btnAddAccount">添加</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><strong>账号列表</strong><span class="muted">点「登录」会打开浏览器，扫码或输入账号密码后自动检测登录态</span></div>
+        <div id="accountGrid" class="account-grid"></div>
+      </div>
+    </section>
+
+    <section id="view-publish" class="view">
+      <div class="split">
+        <div class="panel">
+          <div class="panel-head"><strong>发布设置</strong></div>
+          <div class="form-row"><label>文章</label><select id="pubArticle"></select></div>
+          <div class="form-row"><label>账号</label><div id="pubAccounts" class="pub-accounts"></div></div>
+          <div class="form-row"><label>定时</label><input type="datetime-local" id="pubSchedule"> <span class="muted">留空 = 立即发布</span></div>
+          <div class="form-row"><label></label><button class="btn primary" id="btnPublish">开始分发</button></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><strong>任务记录</strong><button class="btn small" id="btnRefreshTasks">刷新</button></div>
+          <div id="taskList"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-materials" class="view">
+      <div class="panel">
+        <div class="panel-head"><strong>素材库</strong><span class="muted">图片存在本机 data/materials/；正文插入图片时从这里选</span></div>
+        <div class="upload-zone" id="dropZone">点击或把图片拖到这里上传<input type="file" id="fileInput" accept="image/*" multiple hidden></div>
+        <div id="materialGrid" class="material-grid"></div>
+      </div>
+    </section>
+
+    <section id="view-sensitive" class="view">
+      <div class="panel">
+        <div class="panel-head"><strong>违禁词 / 敏感词检测</strong><span class="muted">发布前自查，降低被平台限流风险</span></div>
+        <textarea id="sensText" placeholder="把标题 + 正文粘贴进来，或点「带入当前文章」"></textarea>
+        <div class="form-row">
+          <label></label>
+          <button class="btn primary" id="btnScan">开始扫描</button>
+          <button class="btn" id="btnLoadArticle">带入当前文章</button>
+        </div>
+        <div id="sensResult"></div>
+        <div class="note">内置常见营销违规词库；把 <code>data/sensitive.txt</code> 改成「一行一词」可扩充自己的词库。</div>
+      </div>
+    </section>
+
+    <section id="view-logs" class="view">
+      <div class="panel">
+        <div class="panel-head"><strong>运行日志</strong><button class="btn small" id="btnRefreshLogs">刷新</button></div>
+        <div id="logList" class="log-list"></div>
+      </div>
+    </section>
+  </main>
+</div>
+<div id="toasts"></div>
+<script src="app.js"></script>
+</body>
+</html>
