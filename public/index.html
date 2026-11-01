@@ -52,6 +52,14 @@
       <h1 id="viewTitle">文章</h1>
       <div class="top-right">
         <span id="topStats" class="muted"></span>
+        <div class="theme-switch" id="themeSwitch" title="切换界面配色">
+          <button data-theme="light" class="tc-light" title="浅色"></button>
+          <button data-theme="dark" class="tc-dark" title="深色"></button>
+          <button data-theme="blue" class="tc-blue" title="海蓝"></button>
+          <button data-theme="green" class="tc-green" title="森绿"></button>
+          <button data-theme="orange" class="tc-orange" title="暖橙"></button>
+          <button data-theme="rose" class="tc-rose" title="玫瑰"></button>
+        </div>
         <span id="serverState" class="pill ok">本地服务运行中</span>
       </div>
     </header>
@@ -168,6 +176,13 @@
       </div>
     </section>
   </main>
+</div>
+<div id="imgModal" class="modal-mask" style="display:none">
+  <div class="modal">
+    <h3>选择要插入的图片</h3>
+    <div class="grid" id="imgModalGrid"></div>
+    <div class="modal-foot"><button class="btn" id="imgModalClose">取消</button></div>
+  </div>
 </div>
 <div id="toasts"></div>
 <script src="app.js"></script>

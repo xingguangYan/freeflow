@@ -2,6 +2,19 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 
+// ---------- 主题 ----------
+const THEMES = ['light', 'dark', 'blue', 'green', 'orange', 'rose'];
+function applyTheme(name) {
+  const t = THEMES.includes(name) ? name : 'light';
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem('freeflow-theme', t); } catch { /* */ }
+  $$('#themeSwitch button').forEach(b => b.classList.toggle('active', b.dataset.theme === t));
+}
+applyTheme((() => { try { return localStorage.getItem('freeflow-theme') || 'light'; } catch { return 'light'; } })());
+$('#themeSwitch').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (b) applyTheme(b.dataset.theme);
+});
+
 async function api(path, opts = {}) {
   const r = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...opts });
   if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || r.statusText); }
@@ -131,12 +144,41 @@ $('#edToolbar').addEventListener('click', e => {
 });
 function insertMaterialImage() {
   if (!S.materials.length) return toast('先去素材库上传图片');
-  const list = S.materials.map((m, i) => `${i + 1}. ${m.name}`).join('\n');
-  const n = window.prompt('选择要插入的图片（输入序号）：\n' + list);
-  const i = parseInt(n, 10) - 1;
-  if (isNaN(i) || !S.materials[i]) return;
-  document.execCommand('insertImage', false, S.materials[i].url);
+  const ed = $('#artContent');
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount && ed.contains(sel.anchorNode)) savedRange = sel.getRangeAt(0).cloneRange();
+  $('#imgModalGrid').innerHTML = S.materials.map((m, i) => `
+    <div class="cell" data-i="${i}" title="${esc(m.name)}">
+      <img src="${m.url}" alt="${esc(m.name)}" loading="lazy">
+      <span>${i + 1}. ${esc(m.name)}</span>
+    </div>`).join('');
+  $$('#imgModalGrid .cell').forEach(c => c.onclick = () => doInsertImage(S.materials[+c.dataset.i]));
+  $('#imgModal').style.display = 'flex';
 }
+let savedRange = null;
+function doInsertImage(m) {
+  $('#imgModal').style.display = 'none';
+  if (!m) return;
+  const ed = $('#artContent');
+  ed.focus();
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  if (savedRange && ed.contains(savedRange.startContainer)) {
+    sel.addRange(savedRange);
+  } else {
+    const r = document.createRange();
+    r.selectNodeContents(ed);
+    r.collapse(false);
+    sel.addRange(r);
+  }
+  document.execCommand('insertImage', false, m.url);
+  const ok = [...ed.querySelectorAll('img')].some(img => img.getAttribute('src') === m.url);
+  if (!ok) document.execCommand('insertHTML', false, `<img src="${m.url}" alt="${esc(m.name)}">`);
+  toast('已插入图片：' + m.name);
+  saveCurrent(false);
+}
+$('#imgModalClose').onclick = () => { $('#imgModal').style.display = 'none'; };
+$('#imgModal').addEventListener('click', e => { if (e.target.id === 'imgModal') $('#imgModal').style.display = 'none'; });
 
 // ---------- 视频 ----------
 function setVideo(v) {
@@ -189,12 +231,14 @@ function renderAccounts() {
         ${a.status === 'waiting'
           ? `<button class="btn small primary" data-done="${a.id}">我已登录完成</button>`
           : `<button class="btn small primary" data-login="${a.id}">${a.status === 'loggedIn' ? '重新登录' : '登录'}</button>`}
+        <button class="btn small" data-check="${a.id}">检测</button>
         <button class="btn small danger" data-del="${a.id}">删除</button>
       </div>
     </div>`;
   }).join('');
   $$('#accountGrid [data-login]').forEach(b => b.onclick = () => startLogin(b.dataset.login));
   $$('#accountGrid [data-done]').forEach(b => b.onclick = () => finishLogin(b.dataset.done));
+  $$('#accountGrid [data-check]').forEach(b => b.onclick = () => checkLogin(b.dataset.check));
   $$('#accountGrid [data-del]').forEach(b => b.onclick = async () => {
     if (!confirm('删除账号会同时清掉它的本地登录态，确定？')) return;
     await api('/api/accounts/' + b.dataset.del, { method: 'DELETE' });
@@ -225,6 +269,16 @@ async function finishLogin(accId) {
   await loadAccounts();
   toast('已标记为登录完成');
 }
+async function checkLogin(accId) {
+  const acc = S.accounts.find(a => a.id === accId);
+  if (!acc) return;
+  toast('正在检测登录态…');
+  try {
+    const r = await api('/api/accounts/' + accId + '/check', { method: 'POST' });
+    await loadAccounts();
+    toast(r.loggedIn ? `${platName(acc.platformId)} 已登录` : `${platName(acc.platformId)} 未登录，请点「登录」扫码`);
+  } catch (e) { toast('检测失败: ' + e.message); }
+}
 $('#btnAddAccount').onclick = async () => {
   const platformId = $('#newAccPlatform').value;
   const name = $('#newAccName').value.trim() || undefined;
@@ -246,7 +300,7 @@ function renderPubAccounts() {
     if (p.mode && p.mode !== 'both' && p.mode !== need) return '';
     const accs = S.accounts.filter(a => a.platformId === p.id);
     if (!accs.length) return '';
-    return `<div class="pub-group">${p.name}${p.experimental ? '（实验性）' : ''} · ${need === 'video' ? '视频' : '图文'}</div>` + accs.map(a => `
+    return `<div class="pub-group">${p.name}${p.region === 'global' ? ' · 海外' : ''}${p.experimental ? '（实验性）' : ''} · ${need === 'video' ? '视频' : '图文'}</div>` + accs.map(a => `
       <label class="pub-acc">
         <input type="checkbox" value="${a.id}" ${a.status !== 'loggedIn' ? 'data-maybe="1"' : ''}>
         ${platAvatar(a.platformId)}
@@ -367,7 +421,14 @@ $('#btnRefreshLogs').onclick = loadLogs;
 (async () => {
   try {
     S.platforms = await api('/api/platforms');
-    $('#newAccPlatform').innerHTML = S.platforms.map(p => `<option value="${p.id}">${p.name}${p.experimental ? '（实验）' : ''}</option>`).join('');
+    $('#newAccPlatform').innerHTML = [
+      ['cn-article', '国内 · 图文'], ['cn-video', '国内 · 视频'],
+      ['global-article', '海外 · 图文'], ['global-video', '海外 · 视频']
+    ].map(([key, label]) => {
+      const items = S.platforms.filter(p => `${p.region || 'cn'}-${p.mode === 'video' ? 'video' : 'article'}` === key);
+      if (!items.length) return '';
+      return `<optgroup label="${label}">` + items.map(p => `<option value="${p.id}">${p.name}${p.experimental ? '（实验）' : ''}</option>`).join('') + '</optgroup>';
+    }).join('');
     await Promise.all([loadArticles(), loadAccounts(), loadMaterials()]);
     toast('自由发已就绪：先添加账号并登录，再写文章一键分发');
   } catch (e) {

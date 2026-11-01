@@ -28,8 +28,8 @@ function touchAccount(id, patch) {
 app.get('/api/platforms', (req, res) => {
   res.json(platforms.map(p => ({
     id: p.id, name: p.name, group: p.group, color: p.color,
-    experimental: p.experimental, semi: p.semi, note: p.note, contentType: p.contentType
-    , mode: p.mode || 'article'
+    experimental: p.experimental, semi: p.semi, note: p.note, contentType: p.contentType,
+    region: p.region || 'cn', mode: p.mode || 'article'
   })));
 });
 
@@ -67,31 +67,50 @@ app.post('/api/accounts/:id/login', async (req, res) => {
     const sid = uid('sess');
     const session = { sid, accountId: acc.id, platformId: acc.platformId, ctx, page, detected: false, closed: false, manual: false };
     sessions.set(sid, session);
-    touchAccount(acc.id, { status: 'pending', loginSession: sid });
+    touchAccount(acc.id, { status: 'waiting', loginSession: sid });
+    let timer = null;
+    // 用户手动关掉浏览器窗口：结束会话但不清登录态（cookie 已经落盘，可点「检测登录」确认）
+    try {
+      ctx.browser() && ctx.browser().on('disconnected', () => {
+        if (session.detected || session.closed) return;
+        session.closed = true;
+        if (timer) clearInterval(timer);
+        touchAccount(acc.id, { status: 'pending', loginSession: null });
+        log('', acc.id, 'warn', '登录窗口被关闭，可点「检测登录」确认登录态，或重新登录');
+      });
+    } catch { /* */ }
     // 后台轮询登录态，最多等 8 分钟
     const started = Date.now();
-    const timer = setInterval(async () => {
+    timer = setInterval(async () => {
       if (session.closed || session.detected) { clearInterval(timer); return; }
       try {
-        const url = page.url();
-        if (p.loggedInUrl && p.loggedInUrl.test(url)) {
+        if (await auto.looksLoggedIn(ctx, p, page.url())) {
           session.detected = true; clearInterval(timer);
-          await sleep(2500); // 多等几秒让 cookie 落盘
-          await ctx.close().catch(() => {});
+          await sleep(2000); // 多等几秒让 cookie 落盘
+          await auto.closeCtx(ctx);
           session.closed = true;
           touchAccount(acc.id, { status: 'loggedIn', lastLoginAt: Date.now(), loginSession: null });
           log('', acc.id, 'info', `${p.name} 登录成功（自动检测）`);
         } else if (Date.now() - started > 8 * 60 * 1000) {
           clearInterval(timer);
           if (!session.manual) {
-            await ctx.close().catch(() => {});
-            session.closed = true;
-            touchAccount(acc.id, { status: 'expired', loginSession: null });
-            log('', acc.id, 'warn', '登录等待超时（8分钟），可再次发起登录');
+            // 超时前做一次 cookie 兜底：很多时候其实已经登上了，只是网址没匹配上
+            if (await auto.hasLoginCookies(ctx, p)) {
+              session.detected = true;
+              await auto.closeCtx(ctx);
+              session.closed = true;
+              touchAccount(acc.id, { status: 'loggedIn', lastLoginAt: Date.now(), loginSession: null });
+              log('', acc.id, 'info', `${p.name} 登录成功（cookie 检测）`);
+            } else {
+              await auto.closeCtx(ctx);
+              session.closed = true;
+              touchAccount(acc.id, { status: 'expired', loginSession: null });
+              log('', acc.id, 'warn', '登录等待超时（8分钟），可再次发起登录');
+            }
           }
         }
       } catch { /* 轮询不打断流程 */ }
-    }, 2500);
+    }, 2000);
     res.json({ sid, loginUrl: p.loginUrl });
   } catch (e) {
     log('', acc.id, 'error', '启动登录窗口失败: ' + e.message);
@@ -107,11 +126,33 @@ app.post('/api/login-sessions/:sid/done', async (req, res) => {
   const s = sessions.get(req.params.sid);
   if (!s) return res.status(404).json({ error: '会话不存在' });
   s.manual = true;
-  await s.ctx.close().catch(() => {});
+  await auto.closeCtx(s.ctx);
   s.closed = true;
   touchAccount(s.accountId, { status: 'loggedIn', lastLoginAt: Date.now(), loginSession: null });
   log('', s.accountId, 'info', '登录完成（手动确认）');
   res.json({ ok: true });
+});
+// 重新检测某个账号的登录态：打开一次浏览器读 cookie，不要求重新扫码
+app.post('/api/accounts/:id/check', async (req, res) => {
+  const acc = accounts().find(a => a.id === req.params.id);
+  if (!acc) return res.status(404).json({ error: '账号不存在' });
+  const p = platforms.find(x => x.id === acc.platformId);
+  try {
+    const ctx = await auto.launch(acc.id);
+    const page = ctx.pages()[0] || await ctx.newPage();
+    await page.goto(p.loginUrl, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {});
+    await page.waitForTimeout(1500).catch(() => {});
+    const ok = await auto.looksLoggedIn(ctx, p, page.url());
+    await auto.closeCtx(ctx);
+    touchAccount(acc.id, ok
+      ? { status: 'loggedIn', lastLoginAt: Date.now(), loginSession: null }
+      : { status: 'expired', loginSession: null });
+    log('', acc.id, ok ? 'info' : 'warn', `${p.name} 登录态检测：${ok ? '已登录' : '未登录'}`);
+    res.json({ loggedIn: ok });
+  } catch (e) {
+    log('', acc.id, 'error', '登录态检测失败: ' + e.message);
+    res.status(500).json({ error: e.message });
+  }
 });
 app.post('/api/accounts/:id/recheck', async (req, res) => {
   const acc = accounts().find(a => a.id === req.params.id);

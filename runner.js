@@ -20,6 +20,18 @@ function loggedInUrl(platform, url) {
   try { return platform.loggedInUrl ? platform.loggedInUrl.test(url) : false; } catch { return false; }
 }
 
+// 撞到登录墙时，直接在浏览器里打开登录页，等用户扫码/登录完成（最多 minutes 分钟）。
+async function waitForLogin(ctx, page, platform, accountId, minutes = 5) {
+  log('', accountId, 'warn', `检测到未登录，已打开 ${platform.name} 登录页，请在浏览器中完成登录（最多等 ${minutes} 分钟）`);
+  await page.goto(platform.loginUrl, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {});
+  const started = Date.now();
+  while (Date.now() - started < minutes * 60 * 1000) {
+    if (await auto.looksLoggedIn(ctx, platform, page.url())) return true;
+    await page.waitForTimeout(2500).catch(() => {});
+  }
+  return false;
+}
+
 // 发布一个账号。返回 {status:'ok'|'manual'|'failed', message}
 async function publishToAccount(account, article, coverPath) {
   const platform = platforms.find(p => p.id === account.platformId);
@@ -39,14 +51,30 @@ async function publishToAccount(account, article, coverPath) {
     } catch (e) { log('', account.id, 'warn', `编辑器入口失败 ${u}: ${e.message}`); }
   }
   if (!gotoOk) {
-    await ctx.close().catch(() => {});
+    await auto.closeCtx(ctx);
     return { status: 'failed', message: '编辑器页面打不开（可能登录已过期）' };
   }
-  // 登录态检查
-  if (!loggedInUrl(platform, page.url()) && /login|signin|passport/i.test(page.url())) {
-    await ctx.close().catch(() => {});
-    log('', account.id, 'error', '登录已过期，请重新登录');
-    return { status: 'failed', message: '登录已过期，请重新登录' };
+  // 登录态检查：撞到登录墙就打开登录页等用户登录，登完自动重进编辑器继续发
+  if (await auto.hitLoginWall(ctx, platform, page)) {
+    const loggedIn = await waitForLogin(ctx, page, platform, account.id, 5);
+    if (!loggedIn) {
+      await auto.closeCtx(ctx);
+      log('', account.id, 'error', '登录已过期，请重新登录');
+      return { status: 'failed', message: '登录已过期，请重新登录' };
+    }
+    log('', account.id, 'info', '登录成功，继续发布');
+    let reopened = false;
+    for (const u of platform.editorUrls) {
+      try {
+        await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await page.waitForTimeout(1500);
+        reopened = true; break;
+      } catch (e) { log('', account.id, 'warn', `重进编辑器失败 ${u}: ${e.message}`); }
+    }
+    if (!reopened) {
+      await auto.closeCtx(ctx);
+      return { status: 'failed', message: '登录后编辑器页面仍打不开' };
+    }
   }
   // 入口按钮（如「新建图文」），可能弹新标签页
   if (platform.preClickText && platform.preClickText.length) {
@@ -62,7 +90,7 @@ async function publishToAccount(account, article, coverPath) {
   let filledTitle = false, filledContent = false, coverOk = false;
   try {
     filledTitle = await auto.fillTitle(cur, platform, article.title);
-    filledContent = await auto.fillContent(cur, platform, article.content);
+    filledContent = await auto.fillContent(cur, platform, auto.inlineLocalImages(article.content));
     if (coverPath && fs.existsSync(coverPath)) coverOk = await auto.uploadCover(cur, platform, coverPath);
   } catch (e) {
     log('', account.id, 'error', '填充异常: ' + e.message);
@@ -96,7 +124,7 @@ async function publishToAccount(account, article, coverPath) {
     detail = '没找到发布按钮，可能需要手动点';
   }
   log('', account.id, ok ? 'info' : 'warn', `${pName}(${accName}) ${ok ? '发布成功' : detail}`);
-  await ctx.close().catch(() => {});
+  await auto.closeCtx(ctx);
   return { status: ok ? 'ok' : 'manual', message: ok ? '发布成功' : detail };
 }
 
@@ -119,13 +147,29 @@ async function publishVideoToAccount(account, article, videoPath) {
     } catch (e) { log('', account.id, 'warn', `上传页入口失败 ${u}: ${e.message}`); }
   }
   if (!gotoOk) {
-    await ctx.close().catch(() => {});
+    await auto.closeCtx(ctx);
     return { status: 'failed', message: '上传页打不开（可能登录已过期）' };
   }
-  if (!loggedInUrl(platform, page.url()) && /login|signin|passport/i.test(page.url())) {
-    await ctx.close().catch(() => {});
-    log('', account.id, 'error', '登录已过期，请重新登录');
-    return { status: 'failed', message: '登录已过期，请重新登录' };
+  if (await auto.hitLoginWall(ctx, platform, page)) {
+    const loggedIn = await waitForLogin(ctx, page, platform, account.id, 5);
+    if (!loggedIn) {
+      await auto.closeCtx(ctx);
+      log('', account.id, 'error', '登录已过期，请重新登录');
+      return { status: 'failed', message: '登录已过期，请重新登录' };
+    }
+    log('', account.id, 'info', '登录成功，继续发布视频');
+    let reopened = false;
+    for (const u of platform.editorUrls) {
+      try {
+        await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await page.waitForTimeout(1500);
+        reopened = true; break;
+      } catch (e) { log('', account.id, 'warn', `重进上传页失败 ${u}: ${e.message}`); }
+    }
+    if (!reopened) {
+      await auto.closeCtx(ctx);
+      return { status: 'failed', message: '登录后上传页仍打不开' };
+    }
   }
   if (platform.preClickText && platform.preClickText.length) {
     const clicked = await auto.clickIfAny(page, platform.preClickText, 3000);
@@ -179,7 +223,7 @@ async function publishVideoToAccount(account, article, videoPath) {
     if (!ok) detail += '；未检测到明确成功提示，请到平台后台核对';
   } else { detail = '没找到发布按钮，可能需要手动点'; }
   log('', account.id, ok ? 'info' : 'warn', `${platform.name}(${account.name}) 视频${ok ? '发布成功' : detail}`);
-  await ctx.close().catch(() => {});
+  await auto.closeCtx(ctx);
   return { status: ok ? 'ok' : 'manual', message: ok ? '发布成功' : detail };
 }
 

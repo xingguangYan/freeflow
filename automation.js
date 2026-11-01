@@ -5,8 +5,9 @@
 // - 填充策略：平台专属候选 -> 通用启发式 -> 手动模式（内容已进剪贴板）。
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 const { chromium } = require('playwright');
-const { DATA } = require('./store');
+const { DATA, MATERIALS } = require('./store');
 
 const PROFILES = path.join(DATA, 'profiles');
 fs.mkdirSync(PROFILES, { recursive: true });
@@ -15,7 +16,26 @@ const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 
 function profileDir(accountId) { return path.join(PROFILES, accountId); }
 
-function launch(accountId) {
+// 只杀命令行里带着该 profile 目录的残留 Chrome，不影响用户自己开的窗口。
+function killLingerChrome(dir) {
+  let killed = 0;
+  try {
+    const psCmd = `Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" | Where-Object { $_.CommandLine -like '*${dir.replace(/'/g, "''")}*' } | Select-Object -ExpandProperty ProcessId`;
+    const out = execSync(`powershell -NoProfile -Command "${psCmd}"`, { encoding: 'utf8', timeout: 10000, windowsHide: true });
+    for (const pid of out.split(/\s+/).map(Number).filter(Number.isInteger)) {
+      try { execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore', windowsHide: true }); killed++; } catch { /* 进程可能已退出 */ }
+    }
+  } catch { /* 没有 PowerShell 或没有残留进程 */ }
+  return killed;
+}
+// 删掉 POSIX 风格的 profile 锁文件（Windows 上一般不需要，但留着无害）。
+function clearProfileLock(dir) {
+  for (const f of ['SingletonLock', 'SingletonCookie', 'SingletonSocket', 'Singleton']) {
+    try { fs.rmSync(path.join(dir, f), { force: true }); } catch { /* */ }
+  }
+}
+
+async function launch(accountId) {
   const opts = {
     headless: false,
     viewport: { width: 1280, height: 880 },
@@ -23,14 +43,73 @@ function launch(accountId) {
     args: ['--disable-blink-features=AutomationControlled']
   };
   const dir = profileDir(accountId);
-  // 优先用系统已装的 Chrome（自带 VC++ 运行环境，也更不容易被识别为自动化浏览器）；
-  // 装了 PLAYWRIGHT_CHROMIUM=1 或系统没有 Chrome 时回退到 Playwright 自带内核。
-  if (process.env.FREEFLOW_BROWSER !== 'chromium') {
+  let lastErr = null;
+  // 启动失败最常见的原因是：上一次的 Chrome 没退干净，profile 目录被锁。清残留后重试。
+  for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      return chromium.launchPersistentContext(dir, { ...opts, channel: 'chrome' });
-    } catch (e) { /* 系统没有 Chrome 就走默认内核 */ }
+      // 优先用系统已装的 Chrome（自带 VC++ 运行环境，也更不容易被识别为自动化浏览器）；
+      // 装了 FREEFLOW_BROWSER=chromium 或系统没有 Chrome 时回退到 Playwright 自带内核。
+      if (process.env.FREEFLOW_BROWSER !== 'chromium') {
+        return await chromium.launchPersistentContext(dir, { ...opts, channel: 'chrome' });
+      }
+      return await chromium.launchPersistentContext(dir, opts);
+    } catch (e) {
+      lastErr = e;
+      const n = killLingerChrome(dir);
+      clearProfileLock(dir);
+      console.warn(`[launch] 第 ${attempt + 1} 次启动失败（${String(e.message).split('\n')[0]}），清理残留 Chrome ${n} 个后重试`);
+      await new Promise(r => setTimeout(r, 1200));
+    }
   }
-  return chromium.launchPersistentContext(dir, opts);
+  throw lastErr || new Error('浏览器启动失败');
+}
+
+// 关闭 context，带超时保护，防止 close 卡住下一次启动。
+async function closeCtx(ctx) {
+  if (!ctx) return;
+  try {
+    await Promise.race([
+      new Promise(resolve => { ctx.close().then(resolve).catch(resolve); }),
+      new Promise(r => setTimeout(r, 4000))
+    ]);
+  } catch { /* */ }
+}
+
+// ---------- 登录态判断 ----------
+// cookie 是最可靠的信号：profile 里的登录 cookie 只有真登上才会有。
+async function hasLoginCookies(ctx, platform) {
+  try {
+    const need = platform.loginCookies || [];
+    if (!need.length) return false;
+    const cookies = await ctx.cookies();
+    const names = new Set(cookies.map(c => c.name));
+    return need.some(n => names.has(n));
+  } catch { return false; }
+}
+async function looksLoggedIn(ctx, platform, url) {
+  try { if (platform.loggedInUrl && platform.loggedInUrl.test(url || '')) return true; } catch { /* 正则异常 */ }
+  return await hasLoginCookies(ctx, platform);
+}
+// 发布时判断是否撞登录墙：本地没有登录 cookie，且当前页明显是登录页。
+async function hitLoginWall(ctx, platform, page) {
+  if (await hasLoginCookies(ctx, platform)) return false;
+  const url = page.url();
+  try { if (platform.loggedInUrl && platform.loggedInUrl.test(url)) return false; } catch { /* */ }
+  return /login|signin|sign[-_]?in|passport/i.test(url);
+}
+
+// 正文里的本地图片（/materials/xxx）平台不认，转成 base64 内联进 HTML。
+function inlineLocalImages(html) {
+  return String(html || '').replace(/src="(\/materials\/[^"]+)"/g, (m, url) => {
+    try {
+      const file = path.join(MATERIALS, path.basename(url));
+      const buf = fs.readFileSync(file);
+      let ext = path.extname(file).slice(1).toLowerCase();
+      if (ext === 'jpeg') ext = 'jpg';
+      const mime = ext === 'jpg' ? 'jpeg' : (ext === 'svg' ? 'svg+xml' : ext);
+      return `src="data:image/${mime};base64,${buf.toString('base64')}"`;
+    } catch { return m; }
+  });
 }
 
 async function clickIfAny(page, texts, timeout = 4000) {
@@ -205,7 +284,8 @@ async function fillTags(page, platform, tags) {
 }
 
 module.exports = {
-  launch, profileDir, clickIfAny, waitForPopup, pickVisible,
+  launch, profileDir, clickIfAny, waitForPopup, pickVisible, closeCtx,
+  hasLoginCookies, looksLoggedIn, hitLoginWall, inlineLocalImages,
   htmlToText, htmlToMd, fillTitle, fillContent, uploadCover, clickPublish,
   uploadVideo, fillDesc, fillTags, GENERIC_DESC, GENERIC_TAGS,
   GENERIC_TITLE, GENERIC_CONTENT
