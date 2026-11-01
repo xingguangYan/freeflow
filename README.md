@@ -2,50 +2,21 @@
 
 用浏览器自动化操作**你自己的账号**，不破解任何软件、不经过任何第三方服务器，
 所有数据存在本机。已打包为独立 Windows 程序。
-🔧 开源工具
-https://img.shields.io/badge/-开源工具-3DA639?logo=opensource
-
-💻 本地运行
-https://img.shields.io/badge/-本地运行-4B5563?logo=localhost
-
-📤 自媒体分发
-https://img.shields.io/badge/-自媒体分发-FF6B6B?logo=buffer
-
-🛡️ 数据主权
-https://img.shields.io/badge/-数据主权-1E3A8A?logo=shield
-
-🤖 浏览器自动化
-https://img.shields.io/badge/-浏览器自动化-2C3E50?logo=puppeteer
-
-⚡ Electron应用
-https://img.shields.io/badge/-Electron应用-47848F?logo=electron
-
-🌐 多平台发布
-https://img.shields.io/badge/-多平台发布-0EA5E9?logo=share
-
-🚀 一键多发
-https://img.shields.io/badge/-一键多发-F59E0B?logo=rocket
-
-✍️ 内容创作
-https://img.shields.io/badge/-内容创作-8B5CF6?logo=blogger
-
-🔐 账号安全
-https://img.shields.io/badge/-账号安全-DC2626?logo=key
-
-🆓 反SaaS
-https://img.shields.io/badge/-反SaaS-000000?logo=opensourceinitiative
-
-🏠 零后端
-https://img.shields.io/badge/-零后端-6B7280?logo=serverless
-
-🪟 Windows桌面
-https://img.shields.io/badge/-Windows桌面-0078D4?logo=windows
-
-🟢 Node.js
-https://img.shields.io/badge/-Node.js-339933?logo=nodedotjs
-
-💎 免费开源
-https://img.shields.io/badge/-免费开源-22C55E?logo=githubsponsors
+![开源工具](https://img.shields.io/badge/-开源工具-3DA639?logo=opensource)
+![本地运行](https://img.shields.io/badge/-本地运行-4B5563?logo=localhost)
+![自媒体分发](https://img.shields.io/badge/-自媒体分发-FF6B6B?logo=buffer)
+![数据主权](https://img.shields.io/badge/-数据主权-1E3A8A?logo=shield)
+![浏览器自动化](https://img.shields.io/badge/-浏览器自动化-2C3E50?logo=puppeteer)
+![Electron应用](https://img.shields.io/badge/-Electron应用-47848F?logo=electron)
+![多平台发布](https://img.shields.io/badge/-多平台发布-0EA5E9?logo=share)
+![一键多发](https://img.shields.io/badge/-一键多发-F59E0B?logo=rocket)
+![内容创作](https://img.shields.io/badge/-内容创作-8B5CF6?logo=blogger)
+![账号安全](https://img.shields.io/badge/-账号安全-DC2626?logo=key)
+![反SaaS](https://img.shields.io/badge/-反SaaS-000000?logo=opensourceinitiative)
+![零后端](https://img.shields.io/badge/-零后端-6B7280?logo=serverless)
+![Windows桌面](https://img.shields.io/badge/-Windows桌面-0078D4?logo=windows)
+![Node.js](https://img.shields.io/badge/-Node.js-339933?logo=nodedotjs)
+![免费开源](https://img.shields.io/badge/-免费开源-22C55E?logo=githubsponsors)
 ## 平台覆盖（国内 38 + 海外 15，共 53）
 
 **国内图文（24）**：微信公众号、头条号、百家号、知乎、小红书、B站专栏、简书、CSDN、微博、
