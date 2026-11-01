@@ -252,3 +252,42 @@ select { cursor: pointer; }
 #toasts { position: fixed; right: 18px; bottom: 18px; display: flex; flex-direction: column; gap: 8px; z-index: 50; }
 .toast { background: #1f2430; color: #fff; padding: 10px 18px; border-radius: 9px; box-shadow: 0 6px 20px rgba(0,0,0,.22); animation: fadein .18s; font-size: 13px; max-width: 360px; }
 @keyframes fadein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+
+/* ---------- 搜索 / 双模式编辑器 ---------- */
+.search-row { padding: 10px 12px; border-bottom: 1px solid var(--line-soft); }
+.search-row input { width: 100%; }
+.mode-row { display: flex; align-items: center; gap: 8px; padding: 4px 16px 6px; flex-wrap: wrap; }
+.mode-row .seg { border: 1px solid var(--line); border-radius: 7px; padding: 3px 12px; cursor: pointer; font-size: 12.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; }
+.mode-row .seg:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--panel)); color: var(--accent); font-weight: 600; }
+.mode-row .seg input { accent-color: var(--accent); margin: 0; }
+.md-wrap { border-bottom: 1px solid var(--line-soft); }
+.md-input { width: 100%; min-height: 360px; border: 0; border-radius: 0; font-family: Consolas, "SF Mono", monospace; font-size: 13.5px; line-height: 1.8; resize: vertical; padding: 14px 18px; }
+.md-input:focus { box-shadow: none; }
+.md-bar { display: flex; align-items: center; gap: 10px; padding: 6px 16px 10px; }
+.md-preview { margin: 0 16px 14px; padding: 14px 18px; border: 1px dashed var(--line); border-radius: 8px; line-height: 1.85; }
+.md-preview h1, .md-preview h2, .md-preview h3 { margin: 14px 0 8px; }
+.md-preview img { max-width: 100%; border-radius: 6px; }
+.md-preview pre { background: var(--code-bg); padding: 10px 12px; border-radius: 6px; overflow: auto; }
+.md-preview blockquote { border-left: 3px solid var(--line); padding-left: 10px; color: var(--muted); margin: 8px 0; }
+.md-preview ul, .md-preview ol { padding-left: 22px; margin: 8px 0; }
+.editor-foot { padding: 6px 16px; border-top: 1px solid var(--line-soft); font-size: 11.5px; }
+
+/* ---------- 模式徽标 / 任务操作 ---------- */
+.mode-chip { display: inline-block; font-size: 10.5px; line-height: 1; padding: 3px 7px; border-radius: 99px; vertical-align: middle; margin-left: 4px; }
+.mode-chip.md { background: #e8ecff; color: #3b46d6; }
+.mode-chip.rt { background: #e6f5ee; color: #177a45; }
+[data-theme="dark"] .mode-chip.md { background: #2a3170; color: #b9c0ff; }
+[data-theme="dark"] .mode-chip.rt { background: #1d3a2c; color: #7fe0b0; }
+.task-ops { margin-left: auto; display: inline-flex; gap: 6px; }
+
+/* ---------- 数据看板 ---------- */
+.stats-ops { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.stats-ops select { min-width: 190px; }
+.stats-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; padding: 14px 16px; }
+.stat-card { border: 1px solid var(--line); border-radius: 9px; padding: 12px; }
+.stat-card .row1 { display: flex; gap: 10px; align-items: center; }
+.stat-card .name { font-weight: 600; }
+.stat-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.stat-pill { font-size: 11.5px; padding: 3px 9px; border-radius: 99px; background: color-mix(in srgb, var(--c) 14%, var(--panel)); color: var(--c); font-weight: 600; }
+[data-theme="dark"] .stat-pill { background: color-mix(in srgb, var(--c) 26%, var(--panel)); }
+#statsChart { display: block; width: calc(100% - 32px); height: 220px; margin: 12px 16px 16px; }

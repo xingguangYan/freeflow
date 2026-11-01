@@ -177,6 +177,47 @@ function htmlToMd(html) {
   s = s.replace(/<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi, '[$2]($1)');
   return htmlToText(s).replace(/\n{3,}/g, '\n\n').trim();
 }
+// Markdown -> HTML（用于「Markdown 文章发到富文本平台」）
+function mdToHtml(md) {
+  const escHtml = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const inline = s => s
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  const lines = String(md || '').replace(/\r\n/g, '\n').split('\n');
+  const out = [];
+  let inCode = false, codeBuf = [], listType = null;
+  const closeList = () => { if (listType) { out.push(`</${listType}>`); listType = null; } };
+  for (const line of lines) {
+    if (/^```/.test(line.trim())) {
+      if (!inCode) { inCode = true; codeBuf = []; closeList(); }
+      else { inCode = false; out.push(`<pre><code>${escHtml(codeBuf.join('\n'))}</code></pre>`); }
+      continue;
+    }
+    if (inCode) { codeBuf.push(line); continue; }
+    if (!line.trim()) { closeList(); continue; }
+    const h = /^(#{1,6})\s+(.*)$/.exec(line);
+    if (h) { closeList(); out.push(`<h${h[1].length}>${inline(escHtml(h[2]))}</h${h[1].length}>`); continue; }
+    if (/^(-{3,}|\*{3,})$/.test(line.trim())) { closeList(); out.push('<hr>'); continue; }
+    const ul = /^\s*[-*+]\s+(.*)$/.exec(line);
+    const ol = /^\s*\d+[.)]\s+(.*)$/.exec(line);
+    if (ul || ol) {
+      const type = ul ? 'ul' : 'ol';
+      if (listType !== type) { closeList(); out.push(`<${type}>`); listType = type; }
+      out.push(`<li>${inline(escHtml((ul || ol)[1]))}</li>`);
+      continue;
+    }
+    closeList();
+    const bq = /^>\s?(.*)$/.exec(line);
+    if (bq) { out.push(`<blockquote>${inline(escHtml(bq[1]))}</blockquote>`); continue; }
+    out.push(`<p>${inline(escHtml(line))}</p>`);
+  }
+  if (inCode) out.push(`<pre><code>${escHtml(codeBuf.join('\n'))}</code></pre>`);
+  closeList();
+  return out.join('\n');
+}
 
 // ---------- 填充 ----------
 async function pickVisible(page, selectors) {
@@ -503,7 +544,7 @@ module.exports = {
   launch, profileDir, clickIfAny, waitForPopup, pickVisible, closeCtx,
   pickVisibleIn, waitForEditor, pasteHtml,
   hasLoginCookies, looksLoggedIn, hitLoginWall, checkLoggedIn, pageHasLoginWall, inlineLocalImages,
-  htmlToText, htmlToMd, fillTitle, fillContent, uploadCover, clickPublish, clickPublishRetry, clickConfirm,
+  htmlToText, htmlToMd, mdToHtml, fillTitle, fillContent, uploadCover, clickPublish, clickPublishRetry, clickConfirm,
   clickTextButton, clickPreviewThenPublish,
   uploadVideo, fillDesc, fillTags, GENERIC_DESC, GENERIC_TAGS,
   GENERIC_TITLE, GENERIC_CONTENT

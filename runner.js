@@ -130,8 +130,11 @@ async function publishToAccount(account, article, coverPath) {
   const accName = account.name, pName = platform.name;
   let filledTitle = false, filledContent = false;
   try {
+    const artMode = article.mode || 'richtext';
+    let contentHtml = artMode === 'markdown' ? auto.mdToHtml(article.content) : article.content;
+    contentHtml = auto.inlineLocalImages(contentHtml);
     filledTitle = await auto.fillTitle(cur, platform, article.title);
-    filledContent = await auto.fillContent(cur, platform, auto.inlineLocalImages(article.content));
+    filledContent = await auto.fillContent(cur, platform, contentHtml);
     if (!platform.noCoverUpload && coverPath && fs.existsSync(coverPath)) coverOk = await auto.uploadCover(cur, platform, coverPath);
   } catch (e) {
     log('', account.id, 'error', '填充异常: ' + e.message);
@@ -253,7 +256,7 @@ async function publishVideoToAccount(account, article, videoPath) {
   let t = false, d = false;
   try {
     t = await auto.fillTitle(cur, platform, article.title);
-    d = await auto.fillDesc(cur, platform, auto.htmlToText(article.content));
+    d = await auto.fillDesc(cur, platform, article.mode === 'markdown' ? article.content : auto.htmlToText(article.content));
     if (article.tags) await auto.fillTags(cur, platform, article.tags);
   } catch (e) { log('', account.id, 'error', '填写异常: ' + e.message); }
 

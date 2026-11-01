@@ -32,8 +32,48 @@ function fmtTime(ts) {
   return `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 function esc(s) { return String(s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function mdToHtmlLocal(md) {
+  const escH = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const inline = s => s
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  const lines = String(md || '').replace(/\r\n/g, '\n').split('\n');
+  const out = [];
+  let inCode = false, code = [], list = null;
+  const close = () => { if (list) { out.push(`</${list}>`); list = null; } };
+  for (const line of lines) {
+    if (/^```/.test(line.trim())) {
+      if (!inCode) { inCode = true; code = []; close(); }
+      else { inCode = false; out.push(`<pre><code>${escH(code.join('\n'))}</code></pre>`); }
+      continue;
+    }
+    if (inCode) { code.push(line); continue; }
+    if (!line.trim()) { close(); continue; }
+    const h = /^(#{1,6})\s+(.*)$/.exec(line);
+    if (h) { close(); out.push(`<h${h[1].length}>${inline(escH(h[2]))}</h${h[1].length}>`); continue; }
+    if (/^(-{3,}|\*{3,})$/.test(line.trim())) { close(); out.push('<hr>'); continue; }
+    const ul = /^\s*[-*+]\s+(.*)$/.exec(line);
+    const ol = /^\s*\d+[.)]\s+(.*)$/.exec(line);
+    if (ul || ol) {
+      const t = ul ? 'ul' : 'ol';
+      if (list !== t) { close(); out.push(`<${t}>`); list = t; }
+      out.push(`<li>${inline(escH((ul || ol)[1]))}</li>`);
+      continue;
+    }
+    close();
+    const bq = /^>\s?(.*)$/.exec(line);
+    if (bq) { out.push(`<blockquote>${inline(escH(bq[1]))}</blockquote>`); continue; }
+    out.push(`<p>${inline(escH(line))}</p>`);
+  }
+  if (inCode) out.push(`<pre><code>${escH(code.join('\n'))}</code></pre>`);
+  close();
+  return out.join('');
+}
 
-const S = { platforms: [], accounts: [], articles: [], materials: [], current: null, loginPoll: new Map(), taskTimer: null };
+const S = { platforms: [], accounts: [], articles: [], materials: [], stats: [], current: null, loginPoll: new Map(), taskTimer: null, search: '' };
 
 const platOf = id => S.platforms.find(p => p.id === id) || {};
 const platName = id => platOf(id).name || id;
@@ -57,6 +97,7 @@ function switchView(view, title) {
   $('#viewTitle').textContent = title;
   if (view === 'publish') { renderPublish(); startTaskPoll(); }
   if (view === 'logs') loadLogs();
+  if (view === 'stats') loadStats();
 }
 $('#nav').addEventListener('click', e => {
   const b = e.target.closest('.nav-item'); if (!b) return;
@@ -69,35 +110,60 @@ async function loadArticles() {
   renderArticleList(); renderPubArticleSelect(); updateTopStats();
 }
 function renderArticleList() {
-  if (!S.articles.length) {
+  const list = S.search ? S.articles.filter(a => (a.title || '').toLowerCase().includes(S.search.toLowerCase())) : S.articles;
+  if (!list.length) {
     $('#articleList').innerHTML = '<div class="empty">还没有文章<br>点右上「+ 新建」开始第一篇</div>';
     return;
   }
-  $('#articleList').innerHTML = S.articles.map(a => `
+  $('#articleList').innerHTML = list.map(a => `
     <li data-id="${a.id}" class="${S.current && S.current.id === a.id ? 'active' : ''}">
       <span class="t">${esc(a.title)}</span>
-      <span class="meta">${fmtTime(a.updatedAt || a.createdAt)}${a.cover ? ' · 有封面' : ''}</span>
+      <span class="meta">${fmtTime(a.updatedAt || a.createdAt)}${a.cover ? ' · 有封面' : ''}${a.mode === 'markdown' ? ' · MD' : ''}</span>
     </li>`).join('');
   $$('#articleList li[data-id]').forEach(li => li.onclick = () => selectArticle(li.dataset.id));
 }
 async function selectArticle(id) {
   await saveCurrent(false);
   S.current = S.articles.find(a => a.id === id);
+  if (!S.current) return;
   $('#editorTitle').textContent = S.current.title;
   $('#artTitle').value = S.current.title;
-  $('#artContent').innerHTML = S.current.content || '';
+  const mode = S.current.mode || 'richtext';
+  $('#artContent').innerHTML = mode === 'markdown' ? '' : (S.current.content || '');
+  $('#artMd').value = mode === 'markdown' ? (S.current.content || '') : '';
+  applyMode(mode);
   applyType(S.current.type || 'article');
   $('#artTags').value = S.current.tags || '';
   $('#videoStatus').textContent = S.current.videoFile || S.current.videoPath
     ? '已选视频：' + (S.current.videoName || S.current.videoFile || S.current.videoPath) : '';
   renderCoverSelect();
   renderArticleList();
+  updateArtStats();
 }
+function applyMode(mode) {
+  $$('#view-articles input[name="artMode"]').forEach(r => r.checked = (r.value === mode));
+  const md = mode === 'markdown';
+  $('#mdWrap').style.display = md ? 'block' : 'none';
+  $('#artContent').style.display = md ? 'none' : 'block';
+  $('#edToolbar').style.display = md ? 'none' : 'flex';
+  $('#mdPreview').style.display = 'none';
+}
+$$('#view-articles input[name="artMode"]').forEach(r => r.addEventListener('change', () => {
+  if (!S.current) return;
+  const mode = r.value;
+  // 切换时保留已有内容
+  if (mode === 'markdown') $('#artMd').value = $('#artContent').innerText || $('#artMd').value || '';
+  else $('#artContent').innerHTML = mdToHtmlLocal($('#artMd').value || '') || $('#artContent').innerHTML;
+  applyMode(mode);
+  if (S.current.type !== 'video') $('#edToolbar').style.display = mode === 'markdown' ? 'none' : 'flex';
+  updateArtStats();
+}));
 function applyType(t) {
   $$('#view-articles input[name="artType"]').forEach(r => r.checked = (r.value === t));
   const video = t === 'video';
   $('#videoFields').style.display = video ? 'block' : 'none';
-  $('#edToolbar').style.display = video ? 'none' : 'flex';
+  const md = ($('#view-articles input[name="artMode"]:checked') || {}).value === 'markdown';
+  $('#edToolbar').style.display = (video || md) ? 'none' : 'flex';
   $('#artContent').setAttribute('data-placeholder', video ? '写视频简介 / 文案…' : '写正文，也可以直接从 Word / 网页粘贴（保留格式）。');
   $('#btnScanArticle').style.display = video ? 'none' : '';
 }
@@ -118,15 +184,47 @@ $('#btnNewArticle').onclick = async () => {
 async function saveCurrent(notify = true) {
   if (!S.current) return;
   const type = ($('#view-articles input[name="artType"]:checked') || {}).value || 'article';
-  const body = { id: S.current.id, type, title: $('#artTitle').value.trim() || '未命名', content: $('#artContent').innerHTML, cover: S.current.cover, tags: $('#artTags').value.trim(), videoFile: S.current.videoFile || null, videoPath: S.current.videoPath || null };
+  const mode = ($('#view-articles input[name="artMode"]:checked') || {}).value || 'richtext';
+  const content = mode === 'markdown' ? $('#artMd').value : $('#artContent').innerHTML;
+  const body = { id: S.current.id, type, mode, title: $('#artTitle').value.trim() || '未命名', content, cover: S.current.cover, tags: $('#artTags').value.trim(), videoFile: S.current.videoFile || null, videoPath: S.current.videoPath || null };
   const a = await api('/api/articles', { method: 'POST', body: JSON.stringify(body) });
   Object.assign(S.current, a);
   $('#editorTitle').textContent = a.title;
   const li = $$('#articleList li').find(x => x.dataset.id === a.id);
-  if (li) { li.querySelector('.t').textContent = a.title; li.querySelector('.meta').textContent = fmtTime(a.updatedAt) + (a.cover ? ' · 有封面' : ''); }
+  if (li) { li.querySelector('.t').textContent = a.title; li.querySelector('.meta').textContent = fmtTime(a.updatedAt) + (a.cover ? ' · 有封面' : '') + (a.mode === 'markdown' ? ' · MD' : ''); }
   if (notify) toast('已保存');
 }
 $('#btnSaveArticle').onclick = () => saveCurrent(true);
+$('#artSearch').addEventListener('input', e => { S.search = e.target.value.trim(); renderArticleList(); });
+['#artTitle', '#artContent', '#artMd'].forEach(sel => $(sel).addEventListener('input', updateArtStats));
+$('#btnDelArticle').onclick = async () => {
+  if (!S.current) return toast('先选择一篇文章');
+  if (!confirm('删除文章「' + S.current.title + '」？此操作不可恢复')) return;
+  await api('/api/articles/' + S.current.id, { method: 'DELETE' });
+  S.articles = S.articles.filter(a => a.id !== S.current.id);
+  S.current = null;
+  $('#editorTitle').textContent = '未选择文章'; $('#artTitle').value = ''; $('#artContent').innerHTML = ''; $('#artMd').value = '';
+  renderArticleList(); renderPubArticleSelect(); updateTopStats(); toast('已删除');
+};
+$('#btnDupArticle').onclick = async () => {
+  if (!S.current) return toast('先选择一篇文章');
+  await saveCurrent(false);
+  const copy = await api('/api/articles/' + S.current.id + '/duplicate', { method: 'POST' });
+  S.articles.push(copy); renderArticleList(); await selectArticle(copy.id); updateTopStats(); toast('已复制为新文章');
+};
+$('#btnMdPreview').onclick = () => {
+  const box = $('#mdPreview');
+  if (box.style.display === 'block') { box.style.display = 'none'; return; }
+  box.innerHTML = mdToHtmlLocal($('#artMd').value || '');
+  box.style.display = 'block';
+};
+function updateArtStats() {
+  const md = ($('#view-articles input[name="artMode"]:checked') || {}).value === 'markdown';
+  const text = md ? ($('#artMd').value || '') : ($('#artContent').innerText || '');
+  const n = text.replace(/\s/g, '').length;
+  $('#artStats').textContent = `字数 ${n} · 段落 ${text.split(/\n+/).filter(x => x.trim()).length}`;
+  $('#mdCount').textContent = `Markdown ${(($('#artMd').value || '').length)} 字符`;
+}
 $('#btnScanArticle').onclick = () => {
   const txt = ($('#artTitle').value + '\n' + $('#artContent').innerText).trim();
   if (!txt) return toast('文章是空的');
@@ -179,6 +277,82 @@ function doInsertImage(m) {
 }
 $('#imgModalClose').onclick = () => { $('#imgModal').style.display = 'none'; };
 $('#imgModal').addEventListener('click', e => { if (e.target.id === 'imgModal') $('#imgModal').style.display = 'none'; });
+// ---------- 从网页/剪贴板粘贴图片 ----------
+function fileToDataUrl(f) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(f);
+  });
+}
+function insertImageAt(ed, m, range) {
+  ed.focus();
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  if (range && ed.contains(range.startContainer)) sel.addRange(range);
+  else { const r = document.createRange(); r.selectNodeContents(ed); r.collapse(false); sel.addRange(r); }
+  document.execCommand('insertImage', false, m.url);
+  if (![...ed.querySelectorAll('img')].some(i => i.getAttribute('src') === m.url)) {
+    document.execCommand('insertHTML', false, `<img src="${m.url}" alt="${esc(m.name)}">`);
+  }
+}
+function insertTextAtCursor(ta, text) {
+  const start = ta.selectionStart == null ? ta.value.length : ta.selectionStart;
+  const end = ta.selectionEnd == null ? start : ta.selectionEnd;
+  ta.value = ta.value.slice(0, start) + text + ta.value.slice(end);
+  ta.selectionStart = ta.selectionEnd = start + text.length;
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
+}
+async function handlePasteImages(e, target) {
+  const dt = e.clipboardData; if (!dt) return;
+  const urls = [];
+  const html = dt.getData('text/html');
+  if (html) {
+    try {
+      new DOMParser().parseFromString(html, 'text/html').querySelectorAll('img').forEach(img => {
+        if (/^https?:/i.test(img.src)) urls.push(img.src);
+      });
+    } catch { /* */ }
+  }
+  const files = [...(dt.files || [])].filter(f => f.type.startsWith('image/'));
+  if (!urls.length && !files.length) return;
+  e.preventDefault();
+  if (target === 'md') {
+    let text = '';
+    for (const f of files) {
+      const b64 = await fileToDataUrl(f);
+      const m = await api('/api/materials', { method: 'POST', body: JSON.stringify({ name: f.name || '粘贴图片.png', base64: b64 }) });
+      text += `\n![${m.name}](${m.url})\n`;
+    }
+    for (const url of urls) {
+      try {
+        const m = await api('/api/materials/from-url', { method: 'POST', body: JSON.stringify({ url }) });
+        text += `\n![${m.name}](${m.url})\n`;
+      } catch (err) { toast('图片下载失败：' + err.message); }
+    }
+    if (text) { insertTextAtCursor($('#artMd'), text); loadMaterials(); toast('图片已插入'); }
+    return;
+  }
+  const ed = $('#artContent');
+  const sel = window.getSelection();
+  const range = sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
+  for (const f of files) {
+    const b64 = await fileToDataUrl(f);
+    const m = await api('/api/materials', { method: 'POST', body: JSON.stringify({ name: f.name || '粘贴图片.png', base64: b64 }) });
+    insertImageAt(ed, m, range);
+  }
+  for (const url of urls) {
+    try {
+      toast('正在下载网页图片…');
+      const m = await api('/api/materials/from-url', { method: 'POST', body: JSON.stringify({ url }) });
+      insertImageAt(ed, m, range);
+    } catch (err) { toast('图片下载失败：' + err.message); }
+  }
+  if (files.length || urls.length) { loadMaterials(); saveCurrent(false); toast('图片已插入正文'); }
+}
+$('#artContent').addEventListener('paste', e => handlePasteImages(e, 'rich'));
+$('#artMd').addEventListener('paste', e => handlePasteImages(e, 'md'));
 
 // ---------- 视频 ----------
 function setVideo(v) {
@@ -296,11 +470,13 @@ function renderPubAccounts() {
   const el = $('#pubAccounts'); if (!el) return;
   const art = S.articles.find(a => a.id === $('#pubArticle').value);
   const need = art && art.type === 'video' ? 'video' : 'article';
+  updatePubModeHint(art);
   const html = S.platforms.map(p => {
     if (p.mode && p.mode !== 'both' && p.mode !== need) return '';
     const accs = S.accounts.filter(a => a.platformId === p.id);
     if (!accs.length) return '';
-    return `<div class="pub-group">${p.name}${p.region === 'global' ? ' · 海外' : ''}${p.experimental ? '（实验性）' : ''} · ${need === 'video' ? '视频' : '图文'}</div>` + accs.map(a => `
+    const chip = p.contentType === 'markdown' ? '<span class="mode-chip md">Markdown</span>' : '<span class="mode-chip rt">富文本</span>';
+    return `<div class="pub-group">${p.name}${p.region === 'global' ? ' · 海外' : ''}${p.experimental ? '（实验性）' : ''} · ${need === 'video' ? '视频' : '图文'} ${chip}</div>` + accs.map(a => `
       <label class="pub-acc">
         <input type="checkbox" value="${a.id}" ${a.status !== 'loggedIn' ? 'data-maybe="1"' : ''}>
         ${platAvatar(a.platformId)}
@@ -311,6 +487,12 @@ function renderPubAccounts() {
   el.querySelectorAll('input[data-maybe]').forEach(cb => cb.addEventListener('change', () => {
     cb.closest('.pub-acc').style.background = cb.checked ? '#fff8e6' : '';
   }));
+}
+function updatePubModeHint(art) {
+  const el = $('#pubModeHint'); if (!el) return;
+  if (!art) { el.textContent = ''; return; }
+  const md = art.mode === 'markdown';
+  el.innerHTML = `当前文章 <span class="mode-chip ${md ? 'md' : 'rt'}">${md ? 'Markdown' : '富文本'}</span>，发布时按平台模式自动转换（Markdown ⇄ 富文本），不会乱发。`;
 }
 $('#pubArticle').addEventListener('change', renderPubAccounts);
 function renderPublish() { renderPubArticleSelect(); renderPubAccounts(); renderTasks(); }
@@ -341,9 +523,18 @@ async function renderTasks() {
     }).join('');
     return `<div class="task">
       <div class="head"><strong>${esc(art)}</strong><span class="pill ${st[0]}">${st[1]}</span>
-      <span class="muted">${t.scheduledAt ? '定时 ' + fmtTime(t.scheduledAt) : fmtTime(t.createdAt)}</span></div>
+      <span class="muted">${t.scheduledAt ? '定时 ' + fmtTime(t.scheduledAt) : fmtTime(t.createdAt)}</span>
+      <span class="task-ops"><button class="btn small" data-retry="${t.id}">重试</button><button class="btn small danger" data-deltask="${t.id}">删除</button></span></div>
       <div class="results">${chips}</div></div>`;
   }).join('');
+  $$('#taskList [data-retry]').forEach(b => b.onclick = async () => {
+    await api('/api/tasks/' + b.dataset.retry + '/retry', { method: 'POST' });
+    toast('已重新加入队列'); renderTasks(); startTaskPoll();
+  });
+  $$('#taskList [data-deltask]').forEach(b => b.onclick = async () => {
+    await api('/api/tasks/' + b.dataset.deltask, { method: 'DELETE' });
+    renderTasks(); toast('已删除任务记录');
+  });
 }
 function startTaskPoll() {
   if (S.taskTimer) return;
@@ -356,6 +547,11 @@ function startTaskPoll() {
   }, 4000);
 }
 $('#btnRefreshTasks').onclick = renderTasks;
+$('#btnClearTasks').onclick = async () => {
+  if (!confirm('清空所有历史任务记录？（正在运行的任务会保留）')) return;
+  await api('/api/tasks', { method: 'DELETE' });
+  toast('历史记录已清空'); renderTasks();
+};
 
 // ---------- 素材库 ----------
 async function loadMaterials() {
@@ -416,6 +612,122 @@ async function loadLogs() {
   ).join('') || '<div class="empty">暂无日志</div>';
 }
 $('#btnRefreshLogs').onclick = loadLogs;
+$('#btnClearLogs').onclick = async () => {
+  if (!confirm('清空全部运行日志？')) return;
+  await api('/api/logs', { method: 'DELETE' });
+  loadLogs(); toast('日志已清空');
+};
+
+// ---------- 平台数据 ----------
+const METRIC_LABELS = { fans: '粉丝', read: '阅读/播放', like: '点赞', comment: '评论', share: '分享' };
+const METRIC_COLORS = { fans: '#4f46e5', read: '#059669', like: '#ea7c0c', comment: '#e11d63', share: '#2563eb' };
+
+async function loadStats() {
+  S.stats = await api('/api/stats').catch(() => []);
+  renderStats();
+}
+function latestStatsPerAccount() {
+  const map = new Map();
+  for (const s of S.stats) {
+    const cur = map.get(s.accountId);
+    if (!cur || cur.ts < s.ts) map.set(s.accountId, s);
+  }
+  return map;
+}
+function renderStats() {
+  const latest = latestStatsPerAccount();
+  const withStats = S.accounts.filter(a => latest.has(a.id));
+  $('#statsCards').innerHTML = withStats.length ? withStats.map(a => {
+    const s = latest.get(a.id);
+    const pills = Object.keys(METRIC_LABELS).filter(k => s.metrics && s.metrics[k] != null)
+      .map(k => `<span class="stat-pill" style="--c:${METRIC_COLORS[k]}">${METRIC_LABELS[k]} ${fmtNum(s.metrics[k])}</span>`).join('');
+    return `<div class="stat-card">
+      <div class="row1">${platAvatar(a.platformId)}<div style="flex:1;min-width:0"><div class="name">${esc(a.name)}</div><div class="muted">${platName(a.platformId)} · ${fmtTime(s.ts)}</div></div></div>
+      <div class="stat-pills">${pills || '<span class="muted">无可识别指标</span>'}</div></div>`;
+  }).join('') : '<div class="empty">还没有数据<br>点上方「采集选中账号 / 采集全部已登录」</div>';
+  const sel = $('#statsAccount');
+  const prev = sel.value;
+  sel.innerHTML = S.accounts.map(a => `<option value="${a.id}">${esc(a.name)} · ${platName(a.platformId)}${latest.has(a.id) ? '' : '（无数据）'}</option>`).join('');
+  sel.value = prev && S.accounts.some(a => a.id === prev) ? prev : (withStats[0] ? withStats[0].id : (S.accounts[0] ? S.accounts[0].id : ''));
+  drawStatsChart(sel.value);
+}
+function fmtNum(n) {
+  if (n == null) return '-';
+  if (n >= 100000000) return (n / 100000000).toFixed(1) + '亿';
+  if (n >= 10000) return (n / 10000).toFixed(1) + '万';
+  return String(n);
+}
+function drawStatsChart(accountId) {
+  const canvas = $('#statsChart'); if (!canvas) return;
+  const snaps = S.stats.filter(s => s.accountId === accountId).sort((a, b) => a.ts - b.ts).slice(-12);
+  const acc = S.accounts.find(a => a.id === accountId);
+  $('#statsTrendTitle').textContent = acc ? `${platName(acc.platformId)} · ${acc.name}（最近 ${snaps.length} 次）` : '选择账号查看';
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth || 760, h = 220;
+  canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+  const g = canvas.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  if (!snaps.length) {
+    g.fillStyle = getComputedStyle(document.body).color; g.globalAlpha = .5; g.font = '13px sans-serif';
+    g.fillText('暂无数据，先采集一次', 20, 40); g.globalAlpha = 1;
+    return;
+  }
+  const pad = { l: 48, r: 16, t: 22, b: 30 };
+  const series = {};
+  for (const k of Object.keys(METRIC_LABELS)) {
+    const vals = snaps.map(s => (s.metrics && s.metrics[k] != null) ? s.metrics[k] : 0);
+    if (vals.some(v => v > 0)) series[k] = vals;
+  }
+  const max = Math.max(1, ...Object.values(series).flat());
+  g.strokeStyle = 'rgba(128,128,128,.25)'; g.lineWidth = 1; g.fillStyle = 'rgba(128,128,128,.9)'; g.font = '11px sans-serif';
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + (h - pad.t - pad.b) * i / 4;
+    g.beginPath(); g.moveTo(pad.l, y); g.lineTo(w - pad.r, y); g.stroke();
+    g.fillText(fmtNum(Math.round(max * (1 - i / 4))), 4, y + 4);
+  }
+  const n = snaps.length;
+  for (const [k, vals] of Object.entries(series)) {
+    g.strokeStyle = METRIC_COLORS[k]; g.lineWidth = 2.2; g.beginPath();
+    vals.forEach((v, i) => {
+      const x = pad.l + (w - pad.l - pad.r) * (n <= 1 ? 0 : i / (n - 1));
+      const y = pad.t + (h - pad.t - pad.b) * (1 - v / max);
+      i ? g.lineTo(x, y) : g.moveTo(x, y);
+    });
+    g.stroke();
+  }
+  let lx = pad.l;
+  for (const [k] of Object.entries(series)) {
+    g.fillStyle = METRIC_COLORS[k]; g.fillRect(lx, 6, 10, 3);
+    g.fillStyle = getComputedStyle(document.body).color; g.font = '11px sans-serif';
+    g.fillText(METRIC_LABELS[k], lx + 14, 11);
+    lx += 14 + g.measureText(METRIC_LABELS[k]).width + 16;
+  }
+  g.fillStyle = 'rgba(128,128,128,.9)';
+  g.fillText(fmtTime(snaps[0].ts), pad.l, h - 8);
+  g.fillText(fmtTime(snaps[n - 1].ts), w - pad.r - 56, h - 8);
+}
+async function collectOne(accountId) {
+  const r = await api('/api/stats/collect', { method: 'POST', body: JSON.stringify({ accountId }) });
+  toast(r.logged ? `${r.platformName} 数据采集完成` : `${r.platformName} 未登录，请先登录`);
+  await loadStats();
+  return r;
+}
+$('#statsAccount').addEventListener('change', e => drawStatsChart(e.target.value));
+$('#btnCollectOne').onclick = async () => {
+  const id = $('#statsAccount').value;
+  if (!id) return toast('先添加账号');
+  toast('正在打开平台后台采集，请稍候…');
+  try { await collectOne(id); } catch (e) { toast('采集失败: ' + e.message); }
+};
+$('#btnCollectAll').onclick = async () => {
+  const list = S.accounts.filter(a => a.status === 'loggedIn');
+  if (!list.length) return toast('没有已登录账号');
+  toast(`开始采集 ${list.length} 个账号，全程约 ${list.length * 20} 秒`);
+  for (const a of list) {
+    try { await collectOne(a.id); } catch (e) { toast(`${a.name} 采集失败: ${e.message}`); }
+  }
+  toast('全部采集完成');
+};
 
 // ---------- 启动 ----------
 (async () => {

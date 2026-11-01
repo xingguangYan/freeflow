@@ -38,16 +38,18 @@ jobs:
       - name: Publish release asset
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.2
-          name: 自由发 v1.2 · 53 平台多平台分发
+          tag_name: v1.3
+          name: 自由发 v1.3 · 双模式编辑器 + 数据看板
           files: release/freeflow-win64.zip
           body: |
             Windows 免安装版（解压即用，解压后双击 自由发\自由发.exe）。
 
             - 53 个平台（国内 38 / 海外 15）
+            - 富文本 / Markdown 双模式编辑器，按平台自动转换
+            - 网页图片直接粘贴（自动下载进素材库）
+            - 平台数据看板（粉丝/阅读/点赞趋势图）
+            - 文章搜索、复制、删除；任务重试、删除、清空历史
             - 登录态三重检测，过期自动提示扫码
-            - 修复图片插入、6 套主题
-            - 发布引擎自适应（头条/知乎/B站/CSDN/小红书/微信）
 
             数据保存在程序目录 data 文件夹，请放在可写目录。
         env:

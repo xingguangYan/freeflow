@@ -31,6 +31,10 @@
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.6" cy="8.8" r="1.6"/><path d="M21 15.5 16 10.5 6 20"/></svg>
         <span>素材库</span>
       </button>
+      <button class="nav-item" data-view="stats">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+        <span>数据</span>
+      </button>
       <button class="nav-item" data-view="sensitive">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21.5s7.5-3.8 7.5-9.5V5.2L12 2.5 4.5 5.2v6.8c0 5.7 7.5 9.5 7.5 9.5z"/></svg>
         <span>违禁词</span>
@@ -68,12 +72,15 @@
       <div class="split">
         <div class="panel list-panel">
           <div class="panel-head"><strong>文章列表</strong><button class="btn primary small" id="btnNewArticle">+ 新建</button></div>
+          <div class="search-row"><input id="artSearch" placeholder="搜索标题…"></div>
           <ul id="articleList" class="item-list"></ul>
         </div>
         <div class="panel editor-panel">
           <div class="panel-head">
             <strong id="editorTitle">未选择文章</strong>
             <span>
+              <button class="btn small" id="btnDupArticle">复制</button>
+              <button class="btn small danger" id="btnDelArticle">删除</button>
               <button class="btn small" id="btnScanArticle">违禁词检查</button>
               <button class="btn primary small" id="btnSaveArticle">保存</button>
             </span>
@@ -82,6 +89,12 @@
           <div class="type-row">
             <label class="seg"><input type="radio" name="artType" value="article" checked> 图文</label>
             <label class="seg"><input type="radio" name="artType" value="video"> 视频</label>
+          </div>
+          <div class="mode-row">
+            <span class="muted">编辑器</span>
+            <label class="seg"><input type="radio" name="artMode" value="richtext" checked> 富文本</label>
+            <label class="seg"><input type="radio" name="artMode" value="markdown"> Markdown</label>
+            <span id="artModeHint" class="muted"></span>
           </div>
           <div id="videoFields" class="video-fields" style="display:none">
             <div class="vf-row">
@@ -107,6 +120,12 @@
             <button data-cmd="removeFormat" title="清除格式">清除格式</button>
           </div>
           <div id="artContent" contenteditable="true" class="editor" data-placeholder="写正文，也可以直接从 Word / 网页粘贴（保留格式）。"></div>
+          <div id="mdWrap" class="md-wrap" style="display:none">
+            <textarea id="artMd" class="md-input" placeholder="用 Markdown 写作，例如：&#10;# 标题&#10;正文段落&#10;- 列表项&#10;![图片](https://...)"></textarea>
+            <div class="md-bar"><button class="btn small" id="btnMdPreview">预览</button><span id="mdCount" class="muted"></span></div>
+            <div id="mdPreview" class="md-preview" style="display:none"></div>
+          </div>
+          <div class="editor-foot"><span id="artStats" class="muted"></span></div>
           <div class="cover-row">
             <label>封面图：</label>
             <select id="artCover"><option value="">（不设置）</option></select>
@@ -136,15 +155,32 @@
         <div class="panel">
           <div class="panel-head"><strong>发布设置</strong></div>
           <div class="form-row"><label>文章</label><select id="pubArticle"></select></div>
+          <div class="form-row"><label>模式</label><div id="pubModeHint" class="muted"></div></div>
           <div class="form-row"><label>账号</label><div id="pubAccounts" class="pub-accounts"></div></div>
           <div class="form-row"><label>定时</label><input type="datetime-local" id="pubSchedule"> <span class="muted">留空 = 立即发布</span></div>
           <div class="form-row"><label></label><button class="btn primary" id="btnPublish">开始分发</button></div>
         </div>
         <div class="panel">
-          <div class="panel-head"><strong>任务记录</strong><button class="btn small" id="btnRefreshTasks">刷新</button></div>
+          <div class="panel-head"><strong>任务记录</strong><span><button class="btn small danger" id="btnClearTasks">清空历史</button> <button class="btn small" id="btnRefreshTasks">刷新</button></span></div>
           <div id="taskList"></div>
         </div>
       </div>
+    </section>
+
+    <section id="view-stats" class="view">
+      <div class="panel">
+        <div class="panel-head"><strong>平台数据看板</strong><span class="stats-ops">
+          <select id="statsAccount"></select>
+          <button class="btn small primary" id="btnCollectOne">采集选中账号</button>
+          <button class="btn small" id="btnCollectAll">采集全部已登录</button>
+        </span></div>
+        <div id="statsCards" class="stats-cards"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><strong>指标趋势</strong><span id="statsTrendTitle" class="muted">选择账号查看</span></div>
+        <canvas id="statsChart" height="220"></canvas>
+      </div>
+      <div class="note">数据来自各平台后台页面公开显示的数字，按关键词自动识别，属于估算值，仅供趋势参考。</div>
     </section>
 
     <section id="view-materials" class="view">
@@ -171,7 +207,7 @@
 
     <section id="view-logs" class="view">
       <div class="panel">
-        <div class="panel-head"><strong>运行日志</strong><button class="btn small" id="btnRefreshLogs">刷新</button></div>
+        <div class="panel-head"><strong>运行日志</strong><span><button class="btn small danger" id="btnClearLogs">清空日志</button> <button class="btn small" id="btnRefreshLogs">刷新</button></span></div>
         <div id="logList" class="log-list"></div>
       </div>
     </section>

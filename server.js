@@ -164,22 +164,30 @@ app.post('/api/accounts/:id/recheck', async (req, res) => {
 // ---------- 文章 ----------
 app.get('/api/articles', (req, res) => res.json(load('articles.json', [])));
 app.post('/api/articles', (req, res) => {
-  const { id, title, content, cover, summary, type, tags, videoFile, videoPath } = req.body;
+  const { id, title, content, cover, summary, type, tags, videoFile, videoPath, mode } = req.body;
   const a = load('articles.json', []);
   if (id) {
     const i = a.findIndex(x => x.id === id);
     if (i !== -1) {
-      a[i] = { ...a[i], title, content, cover, summary, type: type || a[i].type, tags, videoFile, videoPath, updatedAt: Date.now() };
+      a[i] = { ...a[i], title, content, cover, summary, type: type || a[i].type, tags, videoFile, videoPath, mode: mode || a[i].mode || 'richtext', updatedAt: Date.now() };
       save('articles.json', a); return res.json(a[i]);
     }
   }
-  const art = { id: uid('art'), type: type || 'article', title: title || '未命名', content: content || '', cover: cover || null, summary: summary || '', tags: tags || '', videoFile: videoFile || null, videoPath: videoPath || null, createdAt: Date.now(), updatedAt: Date.now() };
+  const art = { id: uid('art'), type: type || 'article', mode: mode || 'richtext', title: title || '未命名', content: content || '', cover: cover || null, summary: summary || '', tags: tags || '', videoFile: videoFile || null, videoPath: videoPath || null, createdAt: Date.now(), updatedAt: Date.now() };
   a.push(art); save('articles.json', a);
   res.json(art);
 });
 app.delete('/api/articles/:id', (req, res) => {
   save('articles.json', load('articles.json', []).filter(a => a.id !== req.params.id));
   res.json({ ok: true });
+});
+app.post('/api/articles/:id/duplicate', (req, res) => {
+  const a = load('articles.json', []);
+  const src = a.find(x => x.id === req.params.id);
+  if (!src) return res.status(404).json({ error: '文章不存在' });
+  const copy = { ...src, id: uid('art'), title: src.title + '（副本）', createdAt: Date.now(), updatedAt: Date.now() };
+  a.push(copy); save('articles.json', a);
+  res.json(copy);
 });
 
 // ---------- 素材库 ----------
@@ -203,6 +211,29 @@ app.delete('/api/materials/:id', (req, res) => {
   fs.rmSync(path.join(MATERIALS, fileName), { force: true });
   save('materials.json', load('materials.json', []).filter(m => m.id !== fileName));
   res.json({ ok: true });
+});
+// 直接把网页上的图片 URL 下载进素材库（解决跨域图片粘贴）
+app.post('/api/materials/from-url', async (req, res) => {
+  const url = req.body && req.body.url;
+  if (!/^https?:\/\//i.test(url || '')) return res.status(400).json({ error: '仅支持 http/https 图片地址' });
+  try {
+    const r = await fetch(url, { redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/156 Safari/537.36' } });
+    if (!r.ok) return res.status(400).json({ error: '图片下载失败 HTTP ' + r.status });
+    const ct = (r.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+    if (!ct.startsWith('image/')) return res.status(400).json({ error: '该地址不是图片' });
+    const buf = Buffer.from(await r.arrayBuffer());
+    if (buf.length > 25 * 1024 * 1024) return res.status(400).json({ error: '图片超过 25MB' });
+    const extMap = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif', 'image/webp': 'webp', 'image/svg+xml': 'svg' };
+    const ext = extMap[ct] || 'png';
+    const fileName = uid('img') + '.' + ext;
+    fs.writeFileSync(path.join(MATERIALS, fileName), buf);
+    const list = load('materials.json', []);
+    const item = { id: fileName, name: req.body.name || ('网页图片.' + ext), url: '/materials/' + fileName, size: buf.length, ts: Date.now(), source: url };
+    list.push(item); save('materials.json', list);
+    res.json(item);
+  } catch (e) {
+    res.status(500).json({ error: '下载失败: ' + e.message });
+  }
 });
 
 // ---------- 视频文件 ----------
@@ -253,9 +284,41 @@ app.post('/api/tasks', (req, res) => {
   const task = createTask(articleId, accountIds, scheduledAt ? new Date(scheduledAt).getTime() : null);
   res.json(task);
 });
+app.delete('/api/tasks/:id', (req, res) => {
+  save('tasks.json', load('tasks.json', []).filter(t => t.id !== req.params.id));
+  res.json({ ok: true });
+});
+app.delete('/api/tasks', (req, res) => {
+  const keep = load('tasks.json', []).filter(t => t.status === 'running' || t.status === 'pending');
+  save('tasks.json', keep);
+  res.json({ ok: true, kept: keep.length });
+});
+app.post('/api/tasks/:id/retry', (req, res) => {
+  const t = load('tasks.json', []).find(x => x.id === req.params.id);
+  if (!t) return res.status(404).json({ error: '任务不存在' });
+  const task = createTask(t.articleId, t.accountIds || [], null);
+  res.json(task);
+});
 
 // ---------- 日志 ----------
 app.get('/api/logs', (req, res) => res.json(load('logs.json', [])));
+app.delete('/api/logs', (req, res) => { save('logs.json', []); res.json({ ok: true }); });
+
+// ---------- 平台数据 ----------
+const stats = require('./stats');
+app.get('/api/stats', (req, res) => res.json(stats.list()));
+app.post('/api/stats/collect', async (req, res) => {
+  const acc = accounts().find(a => a.id === (req.body && req.body.accountId));
+  if (!acc) return res.status(404).json({ error: '账号不存在' });
+  try {
+    const snap = await stats.collect(acc);
+    if (snap.logged) stats.append(snap);
+    log('', acc.id, snap.logged ? 'info' : 'warn', `${acc.name} 数据采集：${snap.logged ? '成功' : '未登录'} ${JSON.stringify(snap.metrics)}`);
+    res.json(snap);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
