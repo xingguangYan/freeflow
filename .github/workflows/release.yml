@@ -1,0 +1,53 @@
+name: Build Windows Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        run: npm ci
+
+      - name: Package app
+        run: npm run pack
+
+      - name: Zip clean package
+        shell: pwsh
+        run: |
+          $app = "release/自由发-win32-x64"
+          Remove-Item -Recurse -Force "$app/resources/app/data" -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path "release/out" | Out-Null
+          tar.exe -a -c -f "release/out/freeflow-win64.zip" -C "release" "自由发-win32-x64"
+
+      - name: Publish release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.2
+          name: 自由发 v1.2 · 53 平台多平台分发
+          files: release/out/freeflow-win64.zip
+          body: |
+            Windows 免安装版（解压即用，解压后双击 自由发\自由发.exe）。
+
+            - 53 个平台（国内 38 / 海外 15）
+            - 登录态三重检测，过期自动提示扫码
+            - 修复图片插入、6 套主题
+            - 发布引擎自适应（头条/知乎/B站/CSDN/小红书/微信）
+
+            数据保存在程序目录 data 文件夹，请放在可写目录。
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

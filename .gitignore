@@ -2,6 +2,8 @@ node_modules/
 release/
 dist/
 data/
+_pkg_clean/
+_release_data_backup/
 *.log
 .DS_Store
  Thumbs.db

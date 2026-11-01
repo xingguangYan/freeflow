@@ -6,7 +6,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "pack": "electron-packager . 自由发 --platform=win32 --arch=x64 --icon=app.ico --out=release --overwrite --prune=true --ignore=^/crop_qr --ignore=^/alipay_raw --ignore=^/check_ui --ignore=^/shot_ --ignore=^/start.bat",
+    "pack": "electron-packager . 自由发 --platform=win32 --arch=x64 --icon=app.ico --out=release --overwrite --prune=true --ignore=^/crop_qr --ignore=^/alipay_raw --ignore=^/check_ui --ignore=^/shot_ --ignore=^/start.bat --ignore=^/_release_data_backup --ignore=^/_pkg_clean --ignore=^/release",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
