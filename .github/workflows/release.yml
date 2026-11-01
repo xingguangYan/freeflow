@@ -31,15 +31,16 @@ jobs:
         run: |
           $app = "release/自由发-win32-x64"
           Remove-Item -Recurse -Force "$app/resources/app/data" -ErrorAction SilentlyContinue
-          New-Item -ItemType Directory -Force -Path "release/out" | Out-Null
-          tar.exe -a -c -f "release/out/freeflow-win64.zip" -C "release" "自由发-win32-x64"
+          if (Test-Path "release/freeflow-win64") { Remove-Item -Recurse -Force "release/freeflow-win64" }
+          Copy-Item -Recurse "$app" "release/freeflow-win64"
+          Compress-Archive -Path "release/freeflow-win64" -DestinationPath "release/freeflow-win64.zip" -CompressionLevel Optimal
 
       - name: Publish release asset
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.2
           name: 自由发 v1.2 · 53 平台多平台分发
-          files: release/out/freeflow-win64.zip
+          files: release/freeflow-win64.zip
           body: |
             Windows 免安装版（解压即用，解压后双击 自由发\自由发.exe）。
 
