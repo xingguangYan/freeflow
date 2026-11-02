@@ -2,7 +2,7 @@
 // 发布任务运行器 + 定时调度。单任务串行执行（一次只开一个浏览器实例，最稳）。
 const fs = require('fs');
 const path = require('path');
-const { load, save, uid } = require('./store');
+const { load, save, uid, DATA } = require('./store');
 const platforms = require('./platforms');
 const auto = require('./automation');
 
@@ -306,7 +306,7 @@ async function runTask(taskId) {
   // 视频任务：解析视频文件并做存在性校验
   let videoPath = null;
   if (article.type === 'video') {
-    videoPath = article.videoFile ? path.join(__dirname, 'data', 'videos', article.videoFile)
+    videoPath = article.videoFile ? path.join(DATA, 'videos', article.videoFile)
       : (article.videoPath || null);
     if (!videoPath || !fs.existsSync(videoPath)) {
       task.status = 'failed'; task.error = '视频文件不存在：' + (article.videoFile || article.videoPath || '（未设置视频文件）');
@@ -330,7 +330,7 @@ async function runTask(taskId) {
     total++;
     let coverPath = null;
     if (article.cover) {
-      const p = path.join(__dirname, 'data', 'materials', article.cover);
+      const p = path.join(DATA, 'materials', article.cover);
       if (fs.existsSync(p)) coverPath = p;
     }
     try {

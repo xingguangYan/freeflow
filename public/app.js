@@ -461,6 +461,20 @@ $('#btnAddAccount').onclick = async () => {
   toast('已添加，点「登录」去扫码'); loadAccounts();
 };
 
+// macOS 没装系统 Chrome 时的兜底：下载 Playwright chromium 内核（约 150MB，只需一次）
+$('#btnInstallBrowser').onclick = async () => {
+  const btn = $('#btnInstallBrowser');
+  btn.disabled = true; btn.textContent = '下载中…（约150MB）';
+  try {
+    const r = await api('/api/browser/install-chromium', { method: 'POST' });
+    toast(r.already ? '浏览器内核已就绪，可直接登录' : '浏览器内核下载完成，现在可以登录了');
+  } catch (e) {
+    toast('内核下载失败: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '安装浏览器内核';
+  }
+};
+
 // ---------- 发布 ----------
 function renderPubArticleSelect() {
   const sel = $('#pubArticle'); if (!sel) return;

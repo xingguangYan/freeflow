@@ -3,6 +3,7 @@
 ### 自媒体多平台分发工具 · 本地运行 · 免费开源
 
 用浏览器自动化操作**你自己的账号**。不破解任何软件，不经过任何第三方服务器，所有登录态、素材和发布记录都保存在本机。已打包为独立 Windows 程序，免安装。
+（v1.4 起同时提供 macOS 版，见下方「macOS 版本」。）
 
 ![开源工具](https://img.shields.io/badge/-开源工具-3DA639?logo=opensource)
 ![本地运行](https://img.shields.io/badge/-本地运行-4B5563?logo=localhost)
@@ -10,15 +11,18 @@
 ![Windows桌面](https://img.shields.io/badge/-Windows桌面-0078D4?logo=windows)
 ![Node.js](https://img.shields.io/badge/-Node.js-339933?logo=nodedotjs)
 ![免费开源](https://img.shields.io/badge/-免费开源-22C55E?logo=githubsponsors)
+![macOS桌面](https://img.shields.io/badge/-macOS桌面-000000?logo=apple)
 
 ---
 <img width="1266" height="853" alt="image" src="https://github.com/user-attachments/assets/057c6312-1746-4885-a7d4-bed4d8ef5e21" />
+<img width="1266" height="844" alt="v1.4 界面预览：账号页 + 平台数据看板（Windows 与 macOS 界面相同）" src="docs/preview.png" />
 
 ## 目录
 
 - [核心特点](#核心特点)
 - [平台覆盖](#平台覆盖)
 - [下载安装](#下载安装)
+- [macOS 版本](#macos-版本apple-silicon--intel)
 - [使用流程](#使用流程)
 - [功能详解](#功能详解)
 - [数据目录与迁移](#数据目录与迁移)
@@ -74,6 +78,21 @@ Medium、Dev.to、LinkedIn、Reddit、Hashnode、Substack、Tumblr、Pinterest�
 ```
 
 免安装。数据保存在程序目录的 `data` 文件夹中，整个目录可以拷贝到别处使用。
+
+### macOS 版本（Apple Silicon / Intel）
+
+到 [Releases](https://github.com/xingguangYan/freeflow/releases/latest) 下载对应芯片的安装包（v1.4 起）：
+
+- `freeflow-mac-arm64.zip` / `freeflow-mac-arm64.dmg` —— M1/M2/M3/M4 等 Apple 芯片
+- `freeflow-mac-x64.zip` / `freeflow-mac-x64.dmg` —— Intel 芯片
+
+zip 解压后把「自由发」拖进「应用程序」；dmg 双击后拖拽安装。首次打开若提示「无法验证开发者」，在 app 上右键选「打开」，或在终端执行一次：
+
+```bash
+xattr -cr /Applications/自由发.app
+```
+
+macOS 版数据存在 `~/Library/Application Support/自由发`。发布建议安装 Google Chrome；若没装 Chrome，在「账号」页点「安装浏览器内核」会自动下载浏览器（约 150MB，只需一次）。
 
 ### 方式二：源码运行
 
@@ -176,6 +195,15 @@ npm run pack
 ```
 
 输出目录：`release\自由发-win32-x64`
+
+macOS 版需要在 macOS 上执行（Windows 无法创建 .app 内的符号链接）：
+
+```bash
+npm run pack:mac          # Apple Silicon（arm64）
+npm run pack:mac-intel    # Intel（x64）
+```
+
+输出目录分别是 `release/自由发-darwin-arm64` 与 `release/自由发-darwin-x64`。CI（`.github/workflows/release.yml`）会在打 tag 时自动构建两个平台的安装包并发布到 Release。
 
 **注意事项：**
 

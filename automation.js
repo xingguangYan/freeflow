@@ -12,7 +12,12 @@ const { DATA, MATERIALS } = require('./store');
 const PROFILES = path.join(DATA, 'profiles');
 fs.mkdirSync(PROFILES, { recursive: true });
 
-const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36';
+// 与当前系统一致的 UA，减少被平台识别为自动化浏览器的概率
+const UA = process.platform === 'darwin'
+  ? 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36'
+  : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36';
+// macOS 上全选/粘贴是 ⌘（Meta），Windows/Linux 上是 Ctrl
+const KMOD = process.platform === 'darwin' ? 'Meta' : 'Control';
 
 function profileDir(accountId) { return path.join(PROFILES, accountId); }
 
@@ -20,13 +25,31 @@ function profileDir(accountId) { return path.join(PROFILES, accountId); }
 function killLingerChrome(dir) {
   let killed = 0;
   try {
-    const psCmd = `Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" | Where-Object { $_.CommandLine -like '*${dir.replace(/'/g, "''")}*' } | Select-Object -ExpandProperty ProcessId`;
-    const out = execSync(`powershell -NoProfile -Command "${psCmd}"`, { encoding: 'utf8', timeout: 10000, windowsHide: true });
-    for (const pid of out.split(/\s+/).map(Number).filter(Number.isInteger)) {
-      try { execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore', windowsHide: true }); killed++; } catch { /* 进程可能已退出 */ }
+    if (process.platform === 'win32') {
+      const psCmd = `Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" | Where-Object { $_.CommandLine -like '*${dir.replace(/'/g, "''")}*' } | Select-Object -ExpandProperty ProcessId`;
+      const out = execSync(`powershell -NoProfile -Command "${psCmd}"`, { encoding: 'utf8', timeout: 10000, windowsHide: true });
+      for (const pid of out.split(/\s+/).map(Number).filter(Number.isInteger)) {
+        try { execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore', windowsHide: true }); killed++; } catch { /* 进程可能已退出 */ }
+      }
+    } else {
+      // macOS/Linux：杀命令行含该 profile 的 Chrome/Chromium（不影响用户自己开的窗口）
+      try { execSync(`pkill -f "Google Chrome.*${dir.replace(/[.*+?^${}()|[\\]/g, '\\\\$&')}"`, { stdio: 'ignore', timeout: 10000 }); } catch { /* */ }
+      try { execSync(`pkill -f "Chromium.*${dir.replace(/[.*+?^${}()|[\\]/g, '\\\\$&')}"`, { stdio: 'ignore', timeout: 10000 }); } catch { /* */ }
+      killed = 1; // pkill 不回数，保守视为已清理
     }
   } catch { /* 没有 PowerShell 或没有残留进程 */ }
   return killed;
+}
+
+// macOS 上判断系统 Chrome 是否存在（/Applications 或 ~/Applications）
+function chromeInstalled() {
+  const home = require('os').homedir();
+  const paths = [
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    path.join(home, 'Applications/Google Chrome.app/Contents/MacOS/Google Chrome'),
+    '/Applications/Chromium.app/Contents/MacOS/Chromium'
+  ];
+  return paths.some(p => { try { return fs.existsSync(p); } catch { return false; } });
 }
 // 删掉 POSIX 风格的 profile 锁文件（Windows 上一般不需要，但留着无害）。
 function clearProfileLock(dir) {
@@ -50,9 +73,11 @@ async function launch(accountId) {
     try {
       // 优先用系统已装的 Chrome（自带 VC++ 运行环境，也更不容易被识别为自动化浏览器）；
       // 装了 FREEFLOW_BROWSER=chromium 或系统没有 Chrome 时回退到 Playwright 自带内核。
-      if (process.env.FREEFLOW_BROWSER !== 'chromium') {
+      const wantBundled = process.env.FREEFLOW_BROWSER === 'chromium' || (process.platform === 'darwin' && !chromeInstalled());
+      if (!wantBundled) {
         return await chromium.launchPersistentContext(dir, { ...opts, channel: 'chrome' });
       }
+      // 剩下交给 playwright 自己解析注册表里已下载的 chromium；没下载会抛出带安装提示的错误
       return await chromium.launchPersistentContext(dir, opts);
     } catch (e) {
       lastErr = e;
@@ -333,17 +358,17 @@ async function fillContent(page, platform, html) {
   } else {
     if (isMd) {
       await loc.evaluate(el => { el.focus(); });
-      await page.keyboard.press('Control+A').catch(() => {});
+      await page.keyboard.press(KMOD + '+A').catch(() => {});
       await page.keyboard.press('Delete').catch(() => {});
       await page.keyboard.insertText(payload).catch(() => {});
     } else {
       await loc.evaluate(el => el.focus());
-      await page.keyboard.press('Control+A').catch(() => {});
+      await page.keyboard.press(KMOD + '+A').catch(() => {});
       await page.keyboard.press('Delete').catch(() => {});
       await page.waitForTimeout(150);
       let pasted = false;
       if (await pasteHtml(page, payload)) {
-        await page.keyboard.press('Control+V').catch(() => {});
+        await page.keyboard.press(KMOD + '+V').catch(() => {});
         pasted = true;
         await page.waitForTimeout(800);
       }

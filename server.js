@@ -306,6 +306,33 @@ app.delete('/api/logs', (req, res) => { save('logs.json', []); res.json({ ok: tr
 
 // ---------- 平台数据 ----------
 const stats = require('./stats');
+// ---------- 浏览器内核 ----------
+// macOS 没装系统 Chrome 时，一键下载 Playwright chromium 内核（约 150MB，只需一次）。
+app.post('/api/browser/install-chromium', async (req, res) => {
+  let done = false;
+  const fail = (msg) => { if (!done) { done = true; log('', '', 'error', '浏览器内核下载失败: ' + msg); res.status(500).json({ error: msg }); } };
+  try {
+    const { spawn } = require('child_process');
+    const cli = path.join(__dirname, 'node_modules', 'playwright', 'cli.js');
+    if (!fs.existsSync(cli)) return fail('找不到 playwright CLI');
+    log('', '', 'info', '开始下载浏览器内核（约 150MB），请稍候…');
+    // Electron 打包后 process.execPath 是程序本体；加 ELECTRON_RUN_AS_NODE=1 让它当普通 Node 跑 CLI
+    const child = spawn(process.execPath, [cli, 'install', 'chromium'], {
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+    child.stdout.on('data', d => log('', '', 'info', '内核下载: ' + String(d).trim()));
+    child.on('error', fail);
+    child.on('exit', code => {
+      if (done) return;
+      done = true;
+      if (code === 0) { log('', '', 'info', '浏览器内核下载完成'); res.json({ ok: true }); }
+      else res.status(500).json({ error: '下载进程退出 code=' + code });
+    });
+  } catch (e) {
+    fail(e.message);
+  }
+});
 app.get('/api/stats', (req, res) => res.json(stats.list()));
 app.post('/api/stats/collect', async (req, res) => {
   const acc = accounts().find(a => a.id === (req.body && req.body.accountId));
@@ -327,7 +354,9 @@ app.listen(PORT, () => {
   console.log('自由发已启动: http://127.0.0.1:' + PORT);
   const { exec } = require('child_process');
   if (process.env.FREEFLOW_ELECTRON === '1') return;
-  setTimeout(() => exec('start "" http://127.0.0.1:' + PORT), 500);
+  // 纯网页模式（非 Electron）启动后自动用系统默认浏览器打开
+  const openCmd = process.platform === 'win32' ? `start "" http://127.0.0.1:${PORT}` : `open http://127.0.0.1:${PORT}`;
+  setTimeout(() => exec(openCmd), 500);
 });
 
 process.on('SIGINT', () => { for (const s of sessions.values()) s.ctx.close().catch(() => {}); process.exit(0); });

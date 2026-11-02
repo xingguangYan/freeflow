@@ -1,4 +1,4 @@
-name: Build Windows Release
+name: Build Release (Windows + macOS)
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  build-windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,8 +38,8 @@ jobs:
       - name: Publish release asset
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.3
-          name: 自由发 v1.3 · 双模式编辑器 + 数据看板
+          tag_name: v1.4
+          name: 自由发 v1.4 · 新增 macOS 版
           files: release/freeflow-win64.zip
           body: |
             Windows 免安装版（解压即用，解压后双击 自由发\自由发.exe）。
@@ -52,5 +52,62 @@ jobs:
             - 登录态三重检测，过期自动提示扫码
 
             数据保存在程序目录 data 文件夹，请放在可写目录。
+            macOS 用户请下载下面的 freeflow-mac-*.zip 或 .dmg（Apple Silicon 选 arm64，Intel 选 x64）。
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-macos:
+    runs-on: macos-14
+    needs: build-windows
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        run: npm ci
+
+      - name: Package arm64 (Apple Silicon)
+        run: npm run pack:mac
+
+      - name: Package x64 (Intel)
+        run: npm run pack:mac-intel
+
+      - name: Create zip + dmg
+        run: |
+          for arch in arm64 x64; do
+            app="release/自由发-darwin-$arch/自由发.app"
+            rm -rf "$app/Contents/Resources/app/data"
+            # ditto 保留 Electron Frameworks 里的符号链接，普通 zip 会破坏
+            ditto -c -k --keepParent "$app" "release/freeflow-mac-$arch.zip"
+            hdiutil create -volname "自由发" -srcfolder "$app" -ov -format UDZO "release/freeflow-mac-$arch.dmg"
+          done
+          ls -lh release/*.zip release/*.dmg
+
+      - name: Publish macOS assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.4
+          name: 自由发 v1.4 · 新增 macOS 版
+          files: |
+            release/freeflow-mac-arm64.zip
+            release/freeflow-mac-arm64.dmg
+            release/freeflow-mac-x64.zip
+            release/freeflow-mac-x64.dmg
+          body: |
+            macOS 版（Apple Silicon / Intel）：
+
+            - arm64 = M1/M2/M3/M4 等 Apple 芯片，x64 = Intel 芯片
+            - zip 解压后把「自由发」拖进「应用程序」；dmg 直接双击安装
+            - 首次打开若提示「无法验证开发者」：右键点 app 选「打开」，或终端执行 xattr -cr /Applications/自由发.app
+            - 建议安装 Google Chrome；没装 Chrome 时在「账号」页点「安装浏览器内核」自动下载
+            - macOS 版数据存在 ~/Library/Application Support/自由发
+
+            Windows 用户请下载 freeflow-win64.zip（解压后双击 自由发.exe）。
+            53 个平台（国内 38 / 海外 15）、双模式编辑器、平台数据看板，两版一致。
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

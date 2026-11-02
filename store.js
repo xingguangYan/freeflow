@@ -3,7 +3,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const DATA = path.join(__dirname, 'data');
+// Electron 打包后 macOS 的 .app 包内目录只读，由主进程通过 FREEFLOW_DATA 指定可写位置；
+// Windows 版保持原有的「程序目录/data」以兼容旧数据。
+const DATA = process.env.FREEFLOW_DATA || path.join(__dirname, 'data');
 const MATERIALS = path.join(DATA, 'materials');
 fs.mkdirSync(MATERIALS, { recursive: true });
 
