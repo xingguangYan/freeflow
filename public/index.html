@@ -53,6 +53,7 @@
   </aside>
   <main>
     <header>
+      <button id="btnSideToggle" class="btn small" title="菜单">☰</button>
       <h1 id="viewTitle">文章</h1>
       <div class="top-right">
         <span id="topStats" class="muted"></span>
@@ -64,7 +65,7 @@
           <button data-theme="orange" class="tc-orange" title="暖橙"></button>
           <button data-theme="rose" class="tc-rose" title="玫瑰"></button>
         </div>
-        <span id="serverState" class="pill ok">本地服务运行中</span>
+        <span id="serverState" class="pill ok" style="cursor:pointer" title="点击设置电脑端地址（手机遥控用）">本地服务运行中</span>
       </div>
     </header>
 
@@ -221,6 +222,17 @@
   </div>
 </div>
 <div id="toasts"></div>
+<div id="connModal" class="modal-mask" style="display:none">
+  <div class="modal">
+    <h3>连接电脑端</h3>
+    <p class="muted" style="margin:4px 0 10px">手机与电脑连同一 WiFi，填电脑端地址（如 192.168.1.10:8917）即可遥控发布。留空 = 只编辑不发布。</p>
+    <input id="connHost" placeholder="192.168.1.10:8917" style="width:100%;padding:8px;margin-bottom:12px;box-sizing:border-box">
+    <div class="modal-foot">
+      <button class="btn" id="btnConnCancel">取消</button>
+      <button class="btn primary" id="btnConnSave">保存并连接</button>
+    </div>
+  </div>
+</div>
 <script src="app.js"></script>
 </body>
 </html>

@@ -291,3 +291,23 @@ select { cursor: pointer; }
 .stat-pill { font-size: 11.5px; padding: 3px 9px; border-radius: 99px; background: color-mix(in srgb, var(--c) 14%, var(--panel)); color: var(--c); font-weight: 600; }
 [data-theme="dark"] .stat-pill { background: color-mix(in srgb, var(--c) 26%, var(--panel)); }
 #statsChart { display: block; width: calc(100% - 32px); height: 220px; margin: 12px 16px 16px; }
+
+/* ---------- 手机/窄屏响应式（v1.5 安卓版需要）：侧栏变抽屉 ---------- */
+#btnSideToggle { display: none; }
+@media (max-width: 860px) {
+  body { overflow-x: hidden; }
+  aside { position: fixed; left: 0; top: 0; bottom: 0; z-index: 60; transform: translateX(-105%); transition: transform .22s ease; box-shadow: 2px 0 14px rgba(0,0,0,.28); }
+  aside.open { transform: translateX(0); }
+  main { width: 100%; }
+  #btnSideToggle { display: inline-block; }
+  header { flex-wrap: wrap; height: auto; padding: 8px 12px; gap: 8px; }
+  header h1 { font-size: 15px; }
+  .top-right { width: 100%; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .split { flex-direction: column; }
+  .list-panel { width: 100%; }
+  .account-grid, .stats-cards { grid-template-columns: 1fr; }
+  .material-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+  .toolbar { flex-wrap: wrap; }
+  .modal .grid { grid-template-columns: repeat(2, 1fr); }
+  .editor-panel { min-height: 60vh; }
+}

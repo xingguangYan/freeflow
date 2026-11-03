@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">自由发</string>
+    <string name="title_activity_main">自由发</string>
+    <string name="package_name">com.freeflow.app</string>
+    <string name="custom_url_scheme">com.freeflow.app</string>
+</resources>

@@ -7,3 +7,12 @@ _release_data_backup/
 *.log
 .DS_Store
  Thumbs.db
+
+# Android 构建产物与签名密钥（不入库）
+android/**/build/
+android/.gradle/
+android/captures/
+android/local.properties
+*.keystore
+*.keystore.properties
+freeflow.keystore

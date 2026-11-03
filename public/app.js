@@ -15,8 +15,15 @@ $('#themeSwitch').addEventListener('click', e => {
   const b = e.target.closest('button'); if (b) applyTheme(b.dataset.theme);
 });
 
+// ---------- 连接电脑端（手机版用）----------
+// 桌面端默认同源；手机 APK 填电脑局域网地址（如 192.168.1.10:8917）后，账号与发布都走电脑引擎
+const API = (() => {
+  try { return (localStorage.getItem('ff_host') || '').trim().replace(/\/+$/, ''); } catch { return ''; }
+})();
+function asset(p) { return API && p.startsWith('/') ? API + p : p; }
+
 async function api(path, opts = {}) {
-  const r = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...opts });
+  const r = await fetch(API + path, { headers: { 'Content-Type': 'application/json' }, ...opts });
   if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || r.statusText); }
   return r.status === 204 ? null : r.json();
 }
@@ -172,7 +179,7 @@ function renderCoverSelect() {
   const sel = $('#artCover');
   sel.innerHTML = '<option value="">（不设置）</option>' + S.materials.map(m =>
     `<option value="${m.id}" ${S.current && S.current.cover === m.id ? 'selected' : ''}>${esc(m.name)}</option>`).join('');
-  $('#coverThumb').innerHTML = S.current && S.current.cover ? `<img src="/materials/${S.current.cover}">` : '';
+  $('#coverThumb').innerHTML = S.current && S.current.cover ? `<img src="${asset('/materials/' + S.current.cover)}">` : '';
 }
 $('#artCover').addEventListener('change', () => {
   if (S.current) { S.current.cover = $('#artCover').value || null; saveCurrent(false); renderCoverSelect(); }
@@ -247,7 +254,7 @@ function insertMaterialImage() {
   if (sel && sel.rangeCount && ed.contains(sel.anchorNode)) savedRange = sel.getRangeAt(0).cloneRange();
   $('#imgModalGrid').innerHTML = S.materials.map((m, i) => `
     <div class="cell" data-i="${i}" title="${esc(m.name)}">
-      <img src="${m.url}" alt="${esc(m.name)}" loading="lazy">
+      <img src="${asset(m.url)}" alt="${esc(m.name)}" loading="lazy">
       <span>${i + 1}. ${esc(m.name)}</span>
     </div>`).join('');
   $$('#imgModalGrid .cell').forEach(c => c.onclick = () => doInsertImage(S.materials[+c.dataset.i]));
@@ -577,7 +584,7 @@ async function loadMaterials() {
         <span><button class="btn small" data-copy="${m.url}">复制链接</button>
         <button class="btn small danger" data-mdel="${m.id}">删</button></span></div>
     </div>`).join('') || '<div class="empty">素材库是空的<br>把图片拖到上方区域即可上传</div>';
-  $$('#materialGrid [data-copy]').forEach(b => b.onclick = () => { navigator.clipboard.writeText(location.origin + b.dataset.copy); toast('链接已复制'); });
+  $$('#materialGrid [data-copy]').forEach(b => b.onclick = () => { navigator.clipboard.writeText((API || location.origin) + b.dataset.copy); toast('链接已复制'); });
   $$('#materialGrid [data-mdel]').forEach(b => b.onclick = async () => {
     await api('/api/materials/' + b.dataset.mdel, { method: 'DELETE' });
     loadMaterials();
@@ -744,6 +751,22 @@ $('#btnCollectAll').onclick = async () => {
 };
 
 // ---------- 启动 ----------
+// 右上角状态条：点击设置电脑端地址（手机版遥控）；桌面端同源不用填
+$('#btnSideToggle').onclick = () => document.querySelector('aside').classList.toggle('open');
+$('#nav').addEventListener('click', () => document.querySelector('aside').classList.remove('open'));
+$('#serverState').addEventListener('click', () => {
+  $('#connHost').value = API.replace(/^https?:\/\//, '');
+  $('#connModal').style.display = 'flex';
+});
+$('#btnConnCancel').onclick = () => { $('#connModal').style.display = 'none'; };
+$('#btnConnSave').onclick = () => {
+  let v = $('#connHost').value.trim();
+  if (v && !/^https?:\/\//.test(v)) v = 'http://' + v;
+  v = v.replace(/\/+$/, '');
+  try { v ? localStorage.setItem('ff_host', v) : localStorage.removeItem('ff_host'); } catch { /* */ }
+  location.reload();
+};
+
 (async () => {
   try {
     S.platforms = await api('/api/platforms');
@@ -756,9 +779,10 @@ $('#btnCollectAll').onclick = async () => {
       return `<optgroup label="${label}">` + items.map(p => `<option value="${p.id}">${p.name}${p.experimental ? '（实验）' : ''}</option>`).join('') + '</optgroup>';
     }).join('');
     await Promise.all([loadArticles(), loadAccounts(), loadMaterials()]);
+    if (API) $('#serverState').textContent = '已连接 ' + API.replace(/^https?:\/\//, '');
     toast('自由发已就绪：先添加账号并登录，再写文章一键分发');
   } catch (e) {
     $('#serverState').textContent = '服务连接失败'; $('#serverState').className = 'pill err';
-    toast('启动失败: ' + e.message);
+    toast('启动失败: ' + e.message + (API ? '，请检查电脑端是否已启动' : ''));
   }
 })();

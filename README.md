@@ -23,6 +23,7 @@
 - [平台覆盖](#平台覆盖)
 - [下载安装](#下载安装)
 - [macOS 版本](#macos-版本apple-silicon--intel)
+- [安卓手机版](#安卓手机版v15-新增)
 - [使用流程](#使用流程)
 - [功能详解](#功能详解)
 - [数据目录与迁移](#数据目录与迁移)
@@ -93,6 +94,20 @@ xattr -cr /Applications/自由发.app
 ```
 
 macOS 版数据存在 `~/Library/Application Support/自由发`。发布建议安装 Google Chrome；若没装 Chrome，在「账号」页点「安装浏览器内核」会自动下载浏览器（约 150MB，只需一次）。
+
+### 安卓手机版（v1.5 新增）
+
+到 [Releases](https://github.com/xingguangYan/freeflow/releases/latest) 下载 `freeflow-android.apk`，允许「未知来源应用安装」后直接安装。
+
+**设计说明**：安卓系统不允许 App 操控其他 App 的网页编辑器，所以手机版不是「全自动分发」，而是「**随身编辑器 + 遥控器**」：
+
+- 内嵌完整编辑器，手机上离线写文章、管理素材，界面与电脑端完全一致（窄屏自动折叠侧栏为抽屉）
+- 首次打开点右上角状态条，填电脑端局域网地址（如 `192.168.1.10:8917`）连接电脑
+- 连上后账号、素材、一键发布全部走电脑引擎：扫码登录在电脑屏幕上完成，手机负责写内容和下发任务
+
+<img width="320" alt="手机版主界面" src="docs/mobile-home.png" /> <img width="320" alt="左侧抽屉菜单" src="docs/mobile-drawer.png" /> <img width="320" alt="填电脑地址连接" src="docs/conn-modal.png" />
+
+> 电脑端需 v1.5 及以上版本；电脑端服务默认监听 8917 端口，手机与电脑连同一 WiFi 即可。
 
 ### 方式二：源码运行
 
