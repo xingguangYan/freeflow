@@ -1,4 +1,4 @@
-name: Build Release (Windows + macOS + Android)
+name: Build Release (Windows + macOS + Android + iOS)
 
 on:
   workflow_dispatch:
@@ -38,11 +38,16 @@ jobs:
       - name: Publish release asset
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.5
-          name: 自由发 v1.5 · Windows + macOS + Android 三端
+          tag_name: v1.6
+          name: 自由发 v1.6 · Windows + macOS + Android + iOS 四端
           files: release/freeflow-win64.zip
           body: |
-            Windows 免安装版（解压即用，解压后双击 自由发\自由发.exe）。
+            自由发 v1.6 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
+
+            Windows：下载 freeflow-win64.zip，解压后双击 自由发\自由发.exe
+            macOS：Apple 芯片下 freeflow-mac-arm64.*，Intel 下 freeflow-mac-x64.*（zip 解压后拖进「应用程序」，或双击 dmg）
+            Android：下载 freeflow-android.apk，允许「未知来源安装」后直接安装
+            iOS（v1.6 新增）：下载 freeflow-ios.ipa，为免签包，需用 AltStore / Sideloadly 免费自签后安装（7 天需重签，详见 README「苹果手机版」）
 
             - 53 个平台（国内 38 / 海外 15）
             - 富文本 / Markdown 双模式编辑器，按平台自动转换
@@ -50,9 +55,7 @@ jobs:
             - 平台数据看板（粉丝/阅读/点赞趋势图）
             - 文章搜索、复制、删除；任务重试、删除、清空历史
             - 登录态三重检测，过期自动提示扫码
-
-            数据保存在程序目录 data 文件夹，请放在可写目录。
-            macOS 用户下载 freeflow-mac-*，安卓手机下载 freeflow-android.apk。
+            - 手机版为「随身编辑器 + 遥控器」：连同一局域网电脑（点状态条填地址，如 192.168.1.10:8917），账号与一键发布走电脑引擎
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -82,7 +85,6 @@ jobs:
           for arch in arm64 x64; do
             app="release/自由发-darwin-$arch/自由发.app"
             rm -rf "$app/Contents/Resources/app/data"
-            # ditto 保留 Electron Frameworks 里的符号链接，普通 zip 会破坏
             ditto -c -k --keepParent "$app" "release/freeflow-mac-$arch.zip"
             hdiutil create -volname "自由发" -srcfolder "$app" -ov -format UDZO "release/freeflow-mac-$arch.dmg"
           done
@@ -91,21 +93,28 @@ jobs:
       - name: Publish macOS assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.5
-          name: 自由发 v1.5 · Windows + macOS + Android 三端
+          tag_name: v1.6
+          name: 自由发 v1.6 · Windows + macOS + Android + iOS 四端
           files: |
             release/freeflow-mac-arm64.zip
             release/freeflow-mac-arm64.dmg
             release/freeflow-mac-x64.zip
             release/freeflow-mac-x64.dmg
           body: |
-            macOS 版（Apple Silicon / Intel）：
-            - arm64 = M1/M2/M3/M4 等 Apple 芯片，x64 = Intel 芯片
-            - zip 解压后把「自由发」拖进「应用程序」；dmg 直接双击安装
-            - 首次打开若提示「无法验证开发者」：右键点 app 选「打开」，或终端执行 xattr -cr /Applications/自由发.app
-            - 建议安装 Google Chrome；没装 Chrome 时在「账号」页点「安装浏览器内核」自动下载
-            - macOS 版数据存在 ~/Library/Application Support/自由发
-            Windows 用户请下载 freeflow-win64.zip，安卓手机下载 freeflow-android.apk。
+            自由发 v1.6 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
+
+            Windows：下载 freeflow-win64.zip，解压后双击 自由发\自由发.exe
+            macOS：Apple 芯片下 freeflow-mac-arm64.*，Intel 下 freeflow-mac-x64.*（zip 解压后拖进「应用程序」，或双击 dmg）
+            Android：下载 freeflow-android.apk，允许「未知来源安装」后直接安装
+            iOS（v1.6 新增）：下载 freeflow-ios.ipa，为免签包，需用 AltStore / Sideloadly 免费自签后安装（7 天需重签，详见 README「苹果手机版」）
+
+            - 53 个平台（国内 38 / 海外 15）
+            - 富文本 / Markdown 双模式编辑器，按平台自动转换
+            - 网页图片直接粘贴（自动下载进素材库）
+            - 平台数据看板（粉丝/阅读/点赞趋势图）
+            - 文章搜索、复制、删除；任务重试、删除、清空历史
+            - 登录态三重检测，过期自动提示扫码
+            - 手机版为「随身编辑器 + 遥控器」：连同一局域网电脑（点状态条填地址，如 192.168.1.10:8917），账号与一键发布走电脑引擎
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -150,17 +159,80 @@ jobs:
       - name: Publish Android asset
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.5
-          name: 自由发 v1.5 · Windows + macOS + Android 三端
+          tag_name: v1.6
+          name: 自由发 v1.6 · Windows + macOS + Android + iOS 四端
           files: freeflow-android.apk
           body: |
-            安卓手机版（v1.5 新增）：下载 freeflow-android.apk，允许「未知来源安装」后直接安装。
+            自由发 v1.6 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
 
-            - 内嵌完整编辑器，手机离线也能写文章/管理素材
-            - 首次打开点右上角状态条，填电脑端局域网地址（如 192.168.1.10:8917）连接电脑
-            - 连上后账号、素材、一键发布全部走电脑引擎：扫码登录在电脑上完成，手机负责写内容和下发
-            - 电脑端需运行 v1.5 及以上版本
+            Windows：下载 freeflow-win64.zip，解压后双击 自由发\自由发.exe
+            macOS：Apple 芯片下 freeflow-mac-arm64.*，Intel 下 freeflow-mac-x64.*（zip 解压后拖进「应用程序」，或双击 dmg）
+            Android：下载 freeflow-android.apk，允许「未知来源安装」后直接安装
+            iOS（v1.6 新增）：下载 freeflow-ios.ipa，为免签包，需用 AltStore / Sideloadly 免费自签后安装（7 天需重签，详见 README「苹果手机版」）
 
-            Windows 用户请下载 freeflow-win64.zip，macOS 用户下载 freeflow-mac-*。
+            - 53 个平台（国内 38 / 海外 15）
+            - 富文本 / Markdown 双模式编辑器，按平台自动转换
+            - 网页图片直接粘贴（自动下载进素材库）
+            - 平台数据看板（粉丝/阅读/点赞趋势图）
+            - 文章搜索、复制、删除；任务重试、删除、清空历史
+            - 登录态三重检测，过期自动提示扫码
+            - 手机版为「随身编辑器 + 遥控器」：连同一局域网电脑（点状态条填地址，如 192.168.1.10:8917），账号与一键发布走电脑引擎
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-ios:
+    runs-on: macos-latest
+    needs: build-macos
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Select latest Xcode
+        run: sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+
+      - name: Install dependencies
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        run: npm ci
+
+      - name: Create iOS project and sync web assets
+        run: npx cap add ios
+
+      - name: Allow plain-HTTP access to local desktop engine
+        run: node tools/patch-info-plist.js ios/App/App/Info.plist
+
+      - name: Build unsigned release archive
+        run: xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -destination 'generic/platform=iOS' -archivePath ios/build/App.xcarchive archive CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+
+      - name: Package unsigned IPA
+        run: |
+          mkdir -p ios/Payload
+          cp -R "ios/build/App.xcarchive/Products/Applications/App.app" ios/Payload/
+          cd ios && zip -qry ../freeflow-ios.ipa Payload
+
+      - name: Publish iOS asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.6
+          name: 自由发 v1.6 · Windows + macOS + Android + iOS 四端
+          files: freeflow-ios.ipa
+          body: |
+            自由发 v1.6 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
+
+            Windows：下载 freeflow-win64.zip，解压后双击 自由发\自由发.exe
+            macOS：Apple 芯片下 freeflow-mac-arm64.*，Intel 下 freeflow-mac-x64.*（zip 解压后拖进「应用程序」，或双击 dmg）
+            Android：下载 freeflow-android.apk，允许「未知来源安装」后直接安装
+            iOS（v1.6 新增）：下载 freeflow-ios.ipa，为免签包，需用 AltStore / Sideloadly 免费自签后安装（7 天需重签，详见 README「苹果手机版」）
+
+            - 53 个平台（国内 38 / 海外 15）
+            - 富文本 / Markdown 双模式编辑器，按平台自动转换
+            - 网页图片直接粘贴（自动下载进素材库）
+            - 平台数据看板（粉丝/阅读/点赞趋势图）
+            - 文章搜索、复制、删除；任务重试、删除、清空历史
+            - 登录态三重检测，过期自动提示扫码
+            - 手机版为「随身编辑器 + 遥控器」：连同一局域网电脑（点状态条填地址，如 192.168.1.10:8917），账号与一键发布走电脑引擎
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

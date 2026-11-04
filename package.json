@@ -1,6 +1,6 @@
 {
   "name": "freeflow",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "productName": "自由发",
   "description": "",
   "main": "main.js",
@@ -23,6 +23,7 @@
   "devDependencies": {
     "@capacitor/android": "^8.6.0",
     "@capacitor/cli": "^8.6.0",
+    "@capacitor/ios": "^8.6.0",
     "electron": "^45.2.1",
     "electron-packager": "^17.1.2"
   }

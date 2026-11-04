@@ -24,6 +24,7 @@
 - [下载安装](#下载安装)
 - [macOS 版本](#macos-版本apple-silicon--intel)
 - [安卓手机版](#安卓手机版v15-新增)
+- [苹果手机版](#苹果手机版v16-新增)
 - [使用流程](#使用流程)
 - [功能详解](#功能详解)
 - [数据目录与迁移](#数据目录与迁移)
@@ -108,6 +109,26 @@ macOS 版数据存在 `~/Library/Application Support/自由发`。发布建议�
 <img width="320" alt="手机版主界面" src="docs/mobile-home.png" /> <img width="320" alt="左侧抽屉菜单" src="docs/mobile-drawer.png" /> <img width="320" alt="填电脑地址连接" src="docs/conn-modal.png" />
 
 > 电脑端需 v1.5 及以上版本；电脑端服务默认监听 8917 端口，手机与电脑连同一 WiFi 即可。
+
+### 苹果手机版（v1.6 新增）
+
+到 [Releases](https://github.com/xingguangYan/freeflow/releases/latest) 下载 `freeflow-ios.ipa`。
+
+**重要说明（先看再装）**：苹果生态没有「直接安装的 apk」，官方上架需要 $99/ 年的开发者账号。为了保持全免费，iOS 版提供的是**免签 IPA**，需要用免费工具自签后安装：
+
+1. 电脑（Windows/Mac）安装 [Sideloadly](https://sideloadly.io/) 或 [AltStore](https://altstore.io/)
+2. 用数据线连 iPhone，把 `freeflow-ios.ipa` 拖进去，登录你自己的 Apple ID 完成签名安装
+3. 安装后到「设置 → 通用 → VPN 与设备管理」信任开发者证书
+
+免费 Apple ID 签名有效期为 7 天，过期后重新连电脑签一次即可；界面与安卓手机版完全一致（同一套前端），可参考上方安卓截图。
+
+**设计说明**：与安卓版相同的「**随身编辑器 + 遥控器**」架构——
+
+- 内嵌完整编辑器，手机上离线写文章、管理素材
+- 首次打开点右上角状态条，填电脑端局域网地址（如 `192.168.1.10:8917`）连接电脑
+- 连上后账号、素材、一键发布全部走电脑引擎：扫码登录在电脑屏幕上完成，手机负责写内容和下发任务
+
+> 电脑端需 v1.5 及以上版本；手机与电脑连同一 WiFi 即可。已有苹果开发者账号的同学也可以自行用 Xcode 签名上架。
 
 ### 方式二：源码运行
 
