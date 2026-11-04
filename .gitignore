@@ -16,3 +16,4 @@ android/local.properties
 *.keystore
 *.keystore.properties
 freeflow.keystore
+check.apk
