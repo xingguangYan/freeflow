@@ -38,11 +38,13 @@ jobs:
       - name: Publish release asset
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.6
-          name: 自由发 v1.6 · Windows + macOS + Android + iOS 四端
+          tag_name: v1.7
+          name: 自由发 v1.7 · Windows + macOS + Android + iOS 四端
           files: release/freeflow-win64.zip
           body: |
-            自由发 v1.6 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
+            自由发 v1.7 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
+
+            v1.7 更新：编辑器排版大升级（撤销/重做、字号、字色、底色、行高、对齐、表格、引用、代码块）；小红书按内容自动选择图文/长文章/视频/音频入口，音频笔记支持本地上传自动投递；修复 B 站专栏 Markdown 乱码（改富文本发布）与 CSDN 正文填充丢失
 
             Windows：下载 freeflow-win64.zip，解压后双击 自由发\自由发.exe
             macOS：Apple 芯片下 freeflow-mac-arm64.*，Intel 下 freeflow-mac-x64.*（zip 解压后拖进「应用程序」，或双击 dmg）
@@ -93,15 +95,17 @@ jobs:
       - name: Publish macOS assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.6
-          name: 自由发 v1.6 · Windows + macOS + Android + iOS 四端
+          tag_name: v1.7
+          name: 自由发 v1.7 · Windows + macOS + Android + iOS 四端
           files: |
             release/freeflow-mac-arm64.zip
             release/freeflow-mac-arm64.dmg
             release/freeflow-mac-x64.zip
             release/freeflow-mac-x64.dmg
           body: |
-            自由发 v1.6 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
+            自由发 v1.7 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
+
+            v1.7 更新：编辑器排版大升级（撤销/重做、字号、字色、底色、行高、对齐、表格、引用、代码块）；小红书按内容自动选择图文/长文章/视频/音频入口，音频笔记支持本地上传自动投递；修复 B 站专栏 Markdown 乱码（改富文本发布）与 CSDN 正文填充丢失
 
             Windows：下载 freeflow-win64.zip，解压后双击 自由发\自由发.exe
             macOS：Apple 芯片下 freeflow-mac-arm64.*，Intel 下 freeflow-mac-x64.*（zip 解压后拖进「应用程序」，或双击 dmg）
@@ -159,11 +163,13 @@ jobs:
       - name: Publish Android asset
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.6
-          name: 自由发 v1.6 · Windows + macOS + Android + iOS 四端
+          tag_name: v1.7
+          name: 自由发 v1.7 · Windows + macOS + Android + iOS 四端
           files: freeflow-android.apk
           body: |
-            自由发 v1.6 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
+            自由发 v1.7 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
+
+            v1.7 更新：编辑器排版大升级（撤销/重做、字号、字色、底色、行高、对齐、表格、引用、代码块）；小红书按内容自动选择图文/长文章/视频/音频入口，音频笔记支持本地上传自动投递；修复 B 站专栏 Markdown 乱码（改富文本发布）与 CSDN 正文填充丢失
 
             Windows：下载 freeflow-win64.zip，解压后双击 自由发\自由发.exe
             macOS：Apple 芯片下 freeflow-mac-arm64.*，Intel 下 freeflow-mac-x64.*（zip 解压后拖进「应用程序」，或双击 dmg）
@@ -216,11 +222,13 @@ jobs:
       - name: Publish iOS asset
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.6
-          name: 自由发 v1.6 · Windows + macOS + Android + iOS 四端
+          tag_name: v1.7
+          name: 自由发 v1.7 · Windows + macOS + Android + iOS 四端
           files: freeflow-ios.ipa
           body: |
-            自由发 v1.6 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
+            自由发 v1.7 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
+
+            v1.7 更新：编辑器排版大升级（撤销/重做、字号、字色、底色、行高、对齐、表格、引用、代码块）；小红书按内容自动选择图文/长文章/视频/音频入口，音频笔记支持本地上传自动投递；修复 B 站专栏 Markdown 乱码（改富文本发布）与 CSDN 正文填充丢失
 
             Windows：下载 freeflow-win64.zip，解压后双击 自由发\自由发.exe
             macOS：Apple 芯片下 freeflow-mac-arm64.*，Intel 下 freeflow-mac-x64.*（zip 解压后拖进「应用程序」，或双击 dmg）

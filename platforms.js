@@ -69,17 +69,25 @@ module.exports = [
   {
     id: 'xiaohongshu', name: '小红书', region: 'cn', group: '图文/笔记', color: '#ff2442',
     mode: 'both',
+    audio: true,
     loginUrl: 'https://creator.xiaohongshu.com/login',
     loggedInUrl: /creator\.xiaohongshu\.com\/(publish|home|creator\/|user\/)/,
     loginCookies: ['web_session', 'customer-sso-sid', 'galaxy_creator_session_id'],
+    // 小红书发布入口按内容类型分流：图文笔记 / 长文章 / 视频 / 音频
     editorUrls: ['https://creator.xiaohongshu.com/publish/publish'],
-    preClickText: ['上传图文'],
+    editorUrlsFor: a => {
+      const base = 'https://creator.xiaohongshu.com/publish/publish?from=tab_switch&target=';
+      if (a.type === 'video') return [base + 'video'];
+      if (a.type === 'audio') return [base + 'audio'];
+      // 没封面的长内容走「长文章」入口（不强制配图）；有封面走「图文笔记」先传图
+      return a.cover ? [base + 'image', base + 'article'] : [base + 'article', base + 'image'];
+    },
     mediaFirst: true,
     titleSelectors: ['input[placeholder*="标题"]', '#title', '.d-title input'],
     contentSelectors: ['textarea[placeholder*="正文"]', '#description', '[contenteditable="true"]'],
     contentType: 'richtext',
     coverInput: 'input[type="file"]',
-    note: '小红书笔记必须带图：请先上传至少一张图片（用文章封面或素材库图片）再发布。'
+    note: '小红书按内容自动选择入口：有封面走图文笔记（先传图），纯文字走长文章，视频/音频走对应入口。'
   },
   {
     id: 'bilibili', name: 'B站专栏', region: 'cn', group: '图文', color: '#fb7299',
@@ -89,8 +97,8 @@ module.exports = [
     editorUrls: ['https://member.bilibili.com/york/read-editor?not_checkout=1', 'https://member.bilibili.com/york/read-editor'],
     titleSelectors: ['.article-title input', 'input[placeholder*="标题"]', 'input[name="title"]'],
     contentSelectors: ['.ql-editor', '#textarea', '[contenteditable="true"]', 'textarea'],
-    contentType: 'markdown',
-    note: 'B站专栏编辑器是 Markdown，内容会自动转成 Markdown 再填入。'
+    contentType: 'richtext',
+    note: 'B站专栏是富文本编辑器（Quill），内容以富文本粘贴，保留格式且不显示 Markdown 符号。'
   },
   {
     id: 'jianshu', name: '简书', region: 'cn', group: '图文', color: '#ea6f5a',
@@ -114,7 +122,7 @@ module.exports = [
     loginCookies: ['UserName', 'UserToken'],
     editorUrls: ['https://editor.csdn.net/md?not_checkout=1', 'https://editor.csdn.net/md'],
     titleSelectors: ['.article-title input', 'input[placeholder*="标题"]', '#articleTitle'],
-    contentSelectors: ['.v-note-edit textarea', 'textarea', '[contenteditable="true"]'],
+    contentSelectors: ['.v-note-edit textarea', '.cm-editor .cm-content', '#editor .cm-content', '.ql-editor', '[contenteditable="true"]', 'textarea'],
     contentType: 'markdown',
     note: 'CSDN 是 Markdown 编辑器，内容自动转 Markdown。'
   },
@@ -641,3 +649,15 @@ module.exports = [
     note: '实验性支持：Instagram 网页版上传限制较多，失败时自动切手动模式。'
   }
 ];
+
+// 按文章类型解析发布入口：平台可定义 editorUrlsFor(article) 做分流（如小红书）
+function editorUrlsFor(platform, article) {
+  try {
+    if (typeof platform.editorUrlsFor === 'function') {
+      const list = platform.editorUrlsFor(article || {});
+      if (Array.isArray(list) && list.length) return list;
+    }
+  } catch { /* 回退默认入口 */ }
+  return platform.editorUrls || [];
+}
+module.exports.editorUrlsFor = editorUrlsFor;

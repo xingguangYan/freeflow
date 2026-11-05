@@ -172,16 +172,16 @@ app.post('/api/accounts/:id/recheck', async (req, res) => {
 // ---------- 文章 ----------
 app.get('/api/articles', (req, res) => res.json(load('articles.json', [])));
 app.post('/api/articles', (req, res) => {
-  const { id, title, content, cover, summary, type, tags, videoFile, videoPath, mode } = req.body;
+  const { id, title, content, cover, summary, type, tags, videoFile, videoPath, audioFile, audioPath, mode } = req.body;
   const a = load('articles.json', []);
   if (id) {
     const i = a.findIndex(x => x.id === id);
     if (i !== -1) {
-      a[i] = { ...a[i], title, content, cover, summary, type: type || a[i].type, tags, videoFile, videoPath, mode: mode || a[i].mode || 'richtext', updatedAt: Date.now() };
+      a[i] = { ...a[i], title, content, cover, summary, type: type || a[i].type, tags, videoFile, videoPath, audioFile, audioPath, mode: mode || a[i].mode || 'richtext', updatedAt: Date.now() };
       save('articles.json', a); return res.json(a[i]);
     }
   }
-  const art = { id: uid('art'), type: type || 'article', mode: mode || 'richtext', title: title || '未命名', content: content || '', cover: cover || null, summary: summary || '', tags: tags || '', videoFile: videoFile || null, videoPath: videoPath || null, createdAt: Date.now(), updatedAt: Date.now() };
+  const art = { id: uid('art'), type: type || 'article', mode: mode || 'richtext', title: title || '未命名', content: content || '', cover: cover || null, summary: summary || '', tags: tags || '', videoFile: videoFile || null, videoPath: videoPath || null, audioFile: audioFile || null, audioPath: audioPath || null, createdAt: Date.now(), updatedAt: Date.now() };
   a.push(art); save('articles.json', a);
   res.json(art);
 });
@@ -273,6 +273,38 @@ app.post('/api/videos/path', (req, res) => {
   const item = { file: fileName, name: path.basename(p), size: fs.statSync(p).size, ts: Date.now() };
   list.push(item); save('videos.json', list);
   log('', '', 'info', `视频已登记 ${item.name} ${(item.size / 1048576).toFixed(1)}MB`);
+  res.json(item);
+});
+
+// ---------- 音频（小红书等平台的音频发布） ----------
+const AUDIOS = path.join(DATA, 'audios');
+fs.mkdirSync(AUDIOS, { recursive: true });
+app.get('/api/audios', (req, res) => res.json(load('audios.json', [])));
+app.post('/api/audios', (req, res) => {
+  const { name, base64 } = req.body;
+  if (!base64) return res.status(400).json({ error: '缺少 base64' });
+  const m = /^data:audio\/(\w+);base64,(.*)$/s.exec(base64);
+  if (!m) return res.status(400).json({ error: '仅支持音频 data URI' });
+  const ext = ({ mp3: 'mp3', mpeg: 'mp3', wav: 'wav', wave: 'wav', xwav: 'wav', ogg: 'ogg', m4a: 'm4a', mp4: 'm4a', aac: 'aac', flac: 'flac', xflac: 'flac' })[m[1]] || m[1];
+  const buf = Buffer.from(m[2], 'base64');
+  const fileName = uid('aud') + '.' + ext;
+  fs.writeFileSync(path.join(AUDIOS, fileName), buf);
+  const list = load('audios.json', []);
+  const item = { file: fileName, name: name || fileName, size: buf.length, ts: Date.now() };
+  list.push(item); save('audios.json', list);
+  log('', '', 'info', `音频已入库 ${item.name} ${(buf.length / 1048576).toFixed(1)}MB`);
+  res.json(item);
+});
+app.post('/api/audios/path', (req, res) => {
+  const p = req.body && req.body.path;
+  if (!p || !fs.existsSync(p)) return res.status(400).json({ error: '文件不存在，请检查路径' });
+  const ext = path.extname(p).slice(1).toLowerCase() || 'mp3';
+  const fileName = uid('aud') + '.' + ext;
+  fs.copyFileSync(p, path.join(AUDIOS, fileName));
+  const list = load('audios.json', []);
+  const item = { file: fileName, name: path.basename(p), size: fs.statSync(p).size, ts: Date.now() };
+  list.push(item); save('audios.json', list);
+  log('', '', 'info', `音频已登记 ${item.name} ${(item.size / 1048576).toFixed(1)}MB`);
   res.json(item);
 });
 

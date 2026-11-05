@@ -339,33 +339,51 @@ async function fillTitle(page, platform, title) {
 async function fillContent(page, platform, html) {
   const isMd = platform.contentType === 'markdown';
   const payload = isMd ? htmlToMd(html) : html;
-  const hit = await pickVisibleIn(page, [...(platform.contentSelectors || []), ...GENERIC_CONTENT]);
+  const probe = htmlToText(payload).replace(/\s+/g, '');
+  const candidates = [...(platform.contentSelectors || []), ...GENERIC_CONTENT];
+  const hit = await pickVisibleIn(page, candidates);
   if (!hit) return false;
   const { loc } = hit;
   // 草稿保护：编辑器里已有无关内容时不覆盖，交给手动模式
   const before = await loc.evaluate(el => (el.innerText || el.value || '').trim()).catch(() => '');
-  const probe = htmlToText(payload).replace(/\s+/g, '').slice(0, 10);
   const beforeNorm = before.replace(/\s+/g, '');
   if (beforeNorm.length > 20 && probe && !beforeNorm.includes(probe)) return false;
   const tag = await loc.evaluate(el => el.tagName).catch(() => 'DIV');
+  // 校验：取归一化文本的前 20 字符是否落进编辑器
+  const present = async () => {
+    const cur = await loc.evaluate(el => (el.innerText || el.value || '').replace(/\s+/g, '')).catch(() => '');
+    return probe.length > 0 && cur.includes(probe.slice(failure_tolerant ? 0 : 0, 20));
+  };
+  let failure_tolerant = false;
+  let ok = false;
   if (tag === 'TEXTAREA' || tag === 'INPUT') {
+    // 策略1：原生 setter 赋值（React/Vue 受控组件也认）
     await loc.evaluate((el, v) => {
       const proto = Object.getPrototypeOf(el);
-      Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, v);
+      const setter = (Object.getOwnPropertyDescriptor(proto, 'value') || {}).set;
+      if (setter) setter.call(el, v);
       el.dispatchEvent(new Event('input', { bubbles: true }));
       el.dispatchEvent(new Event('change', { bubbles: true }));
     }, payload);
-  } else {
-    if (isMd) {
-      await loc.evaluate(el => { el.focus(); });
+    ok = await present();
+    if (!ok) {
+      // 策略2：聚焦后键盘整体替换（CodeMirror6 / 手写编辑器认这条）
+      await loc.click({ timeout: 3000 }).catch(() => {});
       await page.keyboard.press(KMOD + '+A').catch(() => {});
       await page.keyboard.press('Delete').catch(() => {});
       await page.keyboard.insertText(payload).catch(() => {});
+      ok = await present();
+    }
+  } else {
+    await loc.evaluate(el => el.focus());
+    await page.keyboard.press(KMOD + '+A').catch(() => {});
+    await page.keyboard.press('Delete').catch(() => {});
+    await page.waitForTimeout(150);
+    if (isMd) {
+      await page.keyboard.insertText(payload).catch(() => {});
+      ok = await present();
     } else {
-      await loc.evaluate(el => el.focus());
-      await page.keyboard.press(KMOD + '+A').catch(() => {});
-      await page.keyboard.press('Delete').catch(() => {});
-      await page.waitForTimeout(150);
+      // 策略1：富文本粘贴（保留格式）
       let pasted = false;
       if (await pasteHtml(page, payload)) {
         await page.keyboard.press(KMOD + '+V').catch(() => {});
@@ -381,9 +399,17 @@ async function fillContent(page, platform, html) {
           document.execCommand('insertHTML', false, h);
         }, payload);
       }
+      ok = await present();
+      if (!ok) {
+        // 策略2：编辑器拒收 HTML 时退化为插入纯文本
+        await page.keyboard.press(KMOD + '+A').catch(() => {});
+        await page.keyboard.press('Delete').catch(() => {});
+        await page.keyboard.insertText(htmlToText(payload)).catch(() => {});
+        ok = await present();
+      }
     }
   }
-  return true;
+  return ok;
 }
 
 async function uploadCover(page, platform, coverPath) {
@@ -514,18 +540,29 @@ async function clickConfirm(page) {
 }
 
 // ---------- 视频 ----------
-async function uploadVideo(page, platform, videoPath) {
-  const sel = platform.uploadInput || 'input[type="file"]';
-  try {
-    const loc = page.locator(sel).first();
-    if (await loc.count() > 0) { await loc.setInputFiles(videoPath); return true; }
-  } catch { /* 再试 iframe */ }
-  try {
-    const hit = await pickVisibleIn(page, [sel]);
-    if (hit) { await hit.loc.setInputFiles(videoPath); return true; }
-  } catch { /* 无上传位 */ }
+// ---------- 媒体上传（视频 / 音频） ----------
+async function uploadMedia(page, platform, mediaPath, kind = 'video') {
+  // 候选选择器：平台指定的上传位 > 按媒体类型匹配 accept > 通用 file input
+  const typeHint = kind === 'audio' ? 'audio' : 'video';
+  const sels = platform.uploadInput
+    ? [platform.uploadInput]
+    : ['input[type="file"][accept~="' + typeHint + '"]', 'input[type="file"][accept*="' + typeHint + '"]', 'input[type="file"]'];
+  for (const sel of sels) {
+    try {
+      const loc = page.locator(sel).first();
+      if (await loc.count() > 0) { await loc.setInputFiles(mediaPath); return true; }
+    } catch { /* 换下个选择器 */ }
+    try {
+      const hit = await pickVisibleIn(page, [sel]);
+      if (hit) { await hit.loc.setInputFiles(mediaPath); return true; }
+    } catch { /* 换下个选择器 */ }
+  }
   return false;
 }
+async function uploadVideo(page, platform, videoPath) {
+  return uploadMedia(page, platform, videoPath, 'video');
+}
+
 const GENERIC_DESC = [
   'textarea[placeholder*="描述"]', 'textarea[placeholder*="简介"]', 'textarea[placeholder*="文案"]',
   'textarea[placeholder*="说明"]', 'div[contenteditable="true"]', 'textarea'
@@ -571,6 +608,6 @@ module.exports = {
   hasLoginCookies, looksLoggedIn, hitLoginWall, checkLoggedIn, pageHasLoginWall, inlineLocalImages,
   htmlToText, htmlToMd, mdToHtml, fillTitle, fillContent, uploadCover, clickPublish, clickPublishRetry, clickConfirm,
   clickTextButton, clickPreviewThenPublish,
-  uploadVideo, fillDesc, fillTags, GENERIC_DESC, GENERIC_TAGS,
+  uploadVideo, uploadMedia, fillDesc, fillTags, GENERIC_DESC, GENERIC_TAGS,
   GENERIC_TITLE, GENERIC_CONTENT
 };

@@ -43,7 +43,7 @@ async function publishToAccount(account, article, coverPath) {
   const page = ctx.pages()[0] || await ctx.newPage();
   let cur = page;
   let gotoOk = false;
-  for (const u of platform.editorUrls) {
+  for (const u of platforms.editorUrlsFor(platform, article)) {
     try {
       await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForTimeout(1500);
@@ -84,7 +84,7 @@ async function publishToAccount(account, article, coverPath) {
     }
     log('', account.id, 'info', '登录成功，继续发布');
     let reopened = false;
-    for (const u of platform.editorUrls) {
+    for (const u of platforms.editorUrlsFor(platform, article)) {
       try {
         await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 30000 });
         await page.waitForTimeout(1500);
@@ -182,18 +182,20 @@ async function publishToAccount(account, article, coverPath) {
   return { status: ok ? 'ok' : 'manual', message: ok ? '发布成功' : detail };
 }
 
-// 视频发布流程
-async function publishVideoToAccount(account, article, videoPath) {
+// 媒体发布流程（视频 / 音频）
+async function publishMediaToAccount(account, article, mediaPath) {
   const platform = platforms.find(p => p.id === account.platformId);
   if (!platform) throw new Error('未知平台: ' + account.platformId);
-  log('', account.id, 'info', `开始发布视频「${article.title}」-> ${platform.name}(${account.name})`);
+  const kind = article.type === 'audio' ? '音频' : '视频';
+  const kindEn = article.type === 'audio' ? 'audio' : 'video';
+  log('', account.id, 'info', `开始发布${kind}「${article.title}」-> ${platform.name}(${account.name})`);
 
   const ctx = await auto.launch(account.id);
   ctx.on('dialog', d => d.accept().catch(() => {}));
   const page = ctx.pages()[0] || await ctx.newPage();
   let cur = page;
   let gotoOk = false;
-  for (const u of platform.editorUrls) {
+  for (const u of platforms.editorUrlsFor(platform, article)) {
     try {
       await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForTimeout(1500);
@@ -202,7 +204,7 @@ async function publishVideoToAccount(account, article, videoPath) {
   }
   if (!gotoOk) {
     await auto.closeCtx(ctx);
-    return { status: 'failed', message: '上传页打不开（可能登录已过期）' };
+    return { status: 'failed', message: kind + '上传页打不开（可能登录已过期）' };
   }
   if (await auto.hitLoginWall(ctx, platform, page)) {
     const loggedIn = await waitForLogin(ctx, page, platform, account.id, 5);
@@ -211,9 +213,9 @@ async function publishVideoToAccount(account, article, videoPath) {
       log('', account.id, 'error', '登录已过期，请重新登录');
       return { status: 'failed', message: '登录已过期，请重新登录' };
     }
-    log('', account.id, 'info', '登录成功，继续发布视频');
+    log('', account.id, 'info', `登录成功，继续发布${kind}`);
     let reopened = false;
-    for (const u of platform.editorUrls) {
+    for (const u of platforms.editorUrlsFor(platform, article)) {
       try {
         await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 30000 });
         await page.waitForTimeout(1500);
@@ -222,26 +224,27 @@ async function publishVideoToAccount(account, article, videoPath) {
     }
     if (!reopened) {
       await auto.closeCtx(ctx);
-      return { status: 'failed', message: '登录后上传页仍打不开' };
+      return { status: 'failed', message: `登录后${kind}上传页仍打不开` };
     }
   }
-  let uploadReady = await auto.pickVisibleIn(cur, [platform.uploadInput || 'input[type="file"]']);
+  const fileInput = platform.uploadInput || (kindEn === 'audio' ? 'input[accept*="audio"], input[type="file"]' : 'input[type="file"]');
+  let uploadReady = await auto.pickVisibleIn(cur, [fileInput]);
   if (!uploadReady && platform.preClickText && platform.preClickText.length) {
     const clicked = await auto.clickIfAny(page, platform.preClickText, 3000);
     if (clicked) {
       log('', account.id, 'info', `点击入口「${clicked}」`);
       const popup = await auto.waitForPopup(ctx, page, 5000);
       if (popup !== page) { cur = popup; log('', account.id, 'info', '已切换到新打开的上传页'); }
-      uploadReady = await auto.pickVisibleIn(cur, [platform.uploadInput || 'input[type="file"]']);
+      uploadReady = await auto.pickVisibleIn(cur, [fileInput]);
     }
   }
 
-  const upOk = await auto.uploadVideo(cur, platform, videoPath);
+  const upOk = await auto.uploadMedia(cur, platform, mediaPath, kindEn);
   if (!upOk) {
-    log('', account.id, 'warn', '没找到视频上传入口，已降级手动模式');
-    return { status: 'manual', message: '未找到上传入口，请手动上传视频后发布', keepCtx: ctx, page: cur };
+    log('', account.id, 'warn', `没找到${kind}上传入口，已降级手动模式`);
+    return { status: 'manual', message: `未找到上传入口，请手动上传${kind}后发布`, keepCtx: ctx, page: cur };
   }
-  log('', account.id, 'info', '视频已选中，等待上传处理（最多 5 分钟）…');
+  log('', account.id, 'info', `${kind}已选中，等待上传处理（最多 5 分钟）…`);
 
   // 等到标题/描述框出现，说明上传处理完成
   const started = Date.now();
@@ -261,13 +264,13 @@ async function publishVideoToAccount(account, article, videoPath) {
   } catch (e) { log('', account.id, 'error', '填写异常: ' + e.message); }
 
   if (platform.semi) {
-    log('', account.id, 'info', `视频已上传并填好(标题:${t ? '成功' : '失败'} 描述:${d ? '成功' : '失败'})，请手动点「发表」`);
-    return { status: 'manual', message: '视频已上传并填好，请手动发表', keepCtx: ctx, page: cur };
+    log('', account.id, 'info', `${kind}已上传并填好(标题:${t ? '成功' : '失败'} 描述:${d ? '成功' : '失败'})，请手动点「发表」`);
+    return { status: 'manual', message: `${kind}已上传并填好，请手动发表`, keepCtx: ctx, page: cur };
   }
   if (!t && !d) {
     const text = article.title + '\n\n' + auto.htmlToText(article.content);
     try { await cur.evaluate(v => navigator.clipboard.writeText(v), text); } catch { /* */ }
-    log('', account.id, 'warn', '填写失败，已降级手动模式（内容已复制到剪贴板）');
+    log('', account.id, 'warn', `${kind}填写失败，已降级手动模式（内容已复制到剪贴板）`);
     return { status: 'manual', message: '自动填写未成功，请手动完成（内容已复制）', keepCtx: ctx, page: cur };
   }
   await cur.waitForTimeout(1500);
@@ -286,7 +289,7 @@ async function publishVideoToAccount(account, article, videoPath) {
     if (!ok) ok = /success|published|manage|list|detail|content/.test(cur.url());
     if (!ok) detail += '；未检测到明确成功提示，请到平台后台核对';
   } else { detail = '没找到发布按钮，可能需要手动点'; }
-  log('', account.id, ok ? 'info' : 'warn', `${platform.name}(${account.name}) 视频${ok ? '发布成功' : detail}`);
+  log('', account.id, ok ? 'info' : 'warn', `${platform.name}(${account.name}) ${kind}${ok ? '发布成功' : detail}`);
   await auto.closeCtx(ctx);
   return { status: ok ? 'ok' : 'manual', message: ok ? '发布成功' : detail };
 }
@@ -303,13 +306,16 @@ async function runTask(taskId) {
   task.status = 'running'; task.startedAt = Date.now(); task.results = task.results || {};
   save('tasks.json', tasks);
 
-  // 视频任务：解析视频文件并做存在性校验
-  let videoPath = null;
-  if (article.type === 'video') {
-    videoPath = article.videoFile ? path.join(DATA, 'videos', article.videoFile)
-      : (article.videoPath || null);
-    if (!videoPath || !fs.existsSync(videoPath)) {
-      task.status = 'failed'; task.error = '视频文件不存在：' + (article.videoFile || article.videoPath || '（未设置视频文件）');
+  // 媒体任务（视频/音频）：解析媒体文件并做存在性校验
+  let mediaPath = null;
+  const isMedia = article.type === 'video' || article.type === 'audio';
+  if (isMedia) {
+    const subdir = article.type === 'video' ? 'videos' : 'audios';
+    const fileKey = article.type === 'video' ? 'videoFile' : 'audioFile';
+    const pathKey = article.type === 'video' ? 'videoPath' : 'audioPath';
+    mediaPath = article[fileKey] ? path.join(DATA, subdir, article[fileKey]) : (article[pathKey] || null);
+    if (!mediaPath || !fs.existsSync(mediaPath)) {
+      task.status = 'failed'; task.error = (article.type === 'video' ? '视频' : '音频') + '文件不存在：' + (article[fileKey] || article[pathKey] || '（未设置文件）');
       save('tasks.json', tasks); return;
     }
   }
@@ -322,9 +328,14 @@ async function runTask(taskId) {
     if (!acc) { task.results[accId] = { status: 'failed', message: '账号不存在' }; continue; }
     // 平台类型支持检查
     const plat = platforms.find(p => p.id === acc.platformId);
-    const need = article.type === 'video' ? 'video' : 'article';
-    if (plat && plat.mode && plat.mode !== 'both' && plat.mode !== need) {
-      task.results[accId] = { status: 'skipped', message: `${plat.name} 不支持${need === 'video' ? '视频' : '图文'}发布`, at: Date.now() };
+    const need = article.type === 'video' ? 'video' : (article.type === 'audio' ? 'audio' : 'article');
+    let skipReason = null;
+    if (plat) {
+      if (need === 'audio' && !plat.audio) skipReason = '音频';
+      else if (need !== 'audio' && plat.mode && plat.mode !== 'both' && plat.mode !== need) skipReason = need === 'video' ? '视频' : '图文';
+    }
+    if (skipReason) {
+      task.results[accId] = { status: 'skipped', message: `${plat.name} 不支持${skipReason}发布`, at: Date.now() };
       continue;
     }
     total++;
@@ -334,8 +345,8 @@ async function runTask(taskId) {
       if (fs.existsSync(p)) coverPath = p;
     }
     try {
-      const r = article.type === 'video'
-        ? await publishVideoToAccount(acc, article, videoPath)
+      const r = isMedia
+        ? await publishMediaToAccount(acc, article, mediaPath)
         : await publishToAccount(acc, article, coverPath);
       task.results[accId] = { status: r.status, message: r.message, at: Date.now() };
       if (r.status === 'ok') okCount++;

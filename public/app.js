@@ -125,7 +125,7 @@ function renderArticleList() {
   $('#articleList').innerHTML = list.map(a => `
     <li data-id="${a.id}" class="${S.current && S.current.id === a.id ? 'active' : ''}">
       <span class="t">${esc(a.title)}</span>
-      <span class="meta">${fmtTime(a.updatedAt || a.createdAt)}${a.cover ? ' · 有封面' : ''}${a.mode === 'markdown' ? ' · MD' : ''}</span>
+      <span class="meta">${fmtTime(a.updatedAt || a.createdAt)}${a.cover ? ' · 有封面' : ''}${a.type === 'video' ? ' · 视频' : a.type === 'audio' ? ' · 音频' : ''}${a.mode === 'markdown' ? ' · MD' : ''}</span>
     </li>`).join('');
   $$('#articleList li[data-id]').forEach(li => li.onclick = () => selectArticle(li.dataset.id));
 }
@@ -143,6 +143,8 @@ async function selectArticle(id) {
   $('#artTags').value = S.current.tags || '';
   $('#videoStatus').textContent = S.current.videoFile || S.current.videoPath
     ? '已选视频：' + (S.current.videoName || S.current.videoFile || S.current.videoPath) : '';
+  $('#audioStatus').textContent = S.current.audioFile || S.current.audioPath
+    ? '已选音频：' + (S.current.audioName || S.current.audioFile || S.current.audioPath) : '';
   renderCoverSelect();
   renderArticleList();
   updateArtStats();
@@ -162,17 +164,20 @@ $$('#view-articles input[name="artMode"]').forEach(r => r.addEventListener('chan
   if (mode === 'markdown') $('#artMd').value = $('#artContent').innerText || $('#artMd').value || '';
   else $('#artContent').innerHTML = mdToHtmlLocal($('#artMd').value || '') || $('#artContent').innerHTML;
   applyMode(mode);
-  if (S.current.type !== 'video') $('#edToolbar').style.display = mode === 'markdown' ? 'none' : 'flex';
+  if (S.current.type !== 'video' && S.current.type !== 'audio') $('#edToolbar').style.display = mode === 'markdown' ? 'none' : 'flex';
   updateArtStats();
 }));
 function applyType(t) {
   $$('#view-articles input[name="artType"]').forEach(r => r.checked = (r.value === t));
-  const video = t === 'video';
+  const video = t === 'video', audio = t === 'audio';
   $('#videoFields').style.display = video ? 'block' : 'none';
+  $('#audioFields').style.display = audio ? 'block' : 'none';
+  $('#tagsFields').style.display = (video || audio) ? 'block' : 'none';
   const md = ($('#view-articles input[name="artMode"]:checked') || {}).value === 'markdown';
-  $('#edToolbar').style.display = (video || md) ? 'none' : 'flex';
-  $('#artContent').setAttribute('data-placeholder', video ? '写视频简介 / 文案…' : '写正文，也可以直接从 Word / 网页粘贴（保留格式）。');
-  $('#btnScanArticle').style.display = video ? 'none' : '';
+  $('#edToolbar').style.display = (video || audio || md) ? 'none' : 'flex';
+  const ph = video ? '写视频简介 / 文案…' : audio ? '写音频简介 / 文案…' : '写正文，也可以直接从 Word / 网页粘贴（保留格式）。';
+  $('#artContent').setAttribute('data-placeholder', ph);
+  $('#btnScanArticle').style.display = (video || audio) ? 'none' : '';
 }
 $$('#view-articles input[name="artType"]').forEach(r => r.addEventListener('change', () => applyType(r.value)));
 function renderCoverSelect() {
@@ -193,7 +198,8 @@ async function saveCurrent(notify = true) {
   const type = ($('#view-articles input[name="artType"]:checked') || {}).value || 'article';
   const mode = ($('#view-articles input[name="artMode"]:checked') || {}).value || 'richtext';
   const content = mode === 'markdown' ? $('#artMd').value : $('#artContent').innerHTML;
-  const body = { id: S.current.id, type, mode, title: $('#artTitle').value.trim() || '未命名', content, cover: S.current.cover, tags: $('#artTags').value.trim(), videoFile: S.current.videoFile || null, videoPath: S.current.videoPath || null };
+  const showTags = type === 'video' || type === 'audio';
+  const body = { id: S.current.id, type, mode, title: $('#artTitle').value.trim() || '未命名', content, cover: S.current.cover, tags: showTags ? $('#artTags').value.trim() : (S.current.tags || ''), videoFile: S.current.videoFile || null, videoPath: S.current.videoPath || null, audioFile: S.current.audioFile || null, audioPath: S.current.audioPath || null };
   const a = await api('/api/articles', { method: 'POST', body: JSON.stringify(body) });
   Object.assign(S.current, a);
   $('#editorTitle').textContent = a.title;
@@ -239,14 +245,95 @@ $('#btnScanArticle').onclick = () => {
   $('#sensText').value = txt;
   scanSensitive();
 };
+// 编辑器撤销/重做：自维护历史栈，按钮和 Ctrl+Z/Y 都走这里（原生历史对节点级排版无效）
+const edHist = { undo: [], redo: [] };
+let edHistTimer = null;
+function pushEdHist() {
+  const snap = $('#artContent').innerHTML;
+  if (edHist.undo.length && edHist.undo[edHist.undo.length - 1] === snap) return;
+  edHist.undo.push(snap);
+  if (edHist.undo.length > 60) edHist.undo.shift();
+  edHist.redo.length = 0;
+}
+function restoreEd(stackFrom, stackTo) {
+  const ed = $('#artContent');
+  if (!stackFrom.length) { toast('没有可撤销的步骤了'); return; }
+  stackTo.push(ed.innerHTML);
+  ed.innerHTML = stackFrom.pop();
+  updateArtStats(); saveCurrent(false);
+}
+function doUndo() { restoreEd(edHist.undo, edHist.redo); }
+function doRedo() { restoreEd(edHist.redo, edHist.undo); }
+$('#artContent').addEventListener('input', () => {
+  clearTimeout(edHistTimer);
+  edHistTimer = setTimeout(pushEdHist, 600);
+});
+$('#artContent').addEventListener('keydown', e => {
+  const mod = e.ctrlKey || e.metaKey;
+  const k = (e.key || '').toLowerCase();
+  if (mod && k === 'z' && !e.shiftKey) { e.preventDefault(); doUndo(); }
+  else if (mod && (k === 'y' || (k === 'z' && e.shiftKey))) { e.preventDefault(); doRedo(); }
+});
 $('#edToolbar').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   const cmd = b.dataset.cmd;
   const ed = $('#artContent'); ed.focus();
   if (cmd === 'insertImage') { insertMaterialImage(); return; }
-  if (cmd === 'h2' || cmd === 'p') document.execCommand('formatBlock', false, cmd === 'h2' ? '<h2>' : '<p>');
+  if (cmd === 'undo') { doUndo(); return; }
+  if (cmd === 'redo') { doRedo(); return; }
+  pushEdHist();
+  if (cmd === 'table') { insertTable(); return; }
+  if (cmd === 'hr') document.execCommand('insertHorizontalRule', false, null);
+  else if (['h1', 'h2', 'h3', 'p', 'blockquote', 'pre'].includes(cmd)) document.execCommand('formatBlock', false, '<' + cmd + '>');
   else document.execCommand(cmd, false, null);
+  updateArtStats();
 });
+$('#tbAlign').addEventListener('change', e => {
+  if (!e.target.value) return;
+  $('#artContent').focus();
+  pushEdHist();
+  document.execCommand(e.target.value, false, null);
+  e.target.value = '';
+  updateArtStats();
+});
+$('#tbFontSize').addEventListener('change', e => {
+  if (!e.target.value) return;
+  styleSelection({ fontSize: e.target.value + 'px' });
+  e.target.value = '';
+});
+$('#tbLineHeight').addEventListener('change', e => {
+  if (!e.target.value) return;
+  styleSelection({ lineHeight: e.target.value });
+  e.target.value = '';
+});
+$('#tbColor').addEventListener('input', e => styleSelection({ color: e.target.value }));
+$('#tbBg').addEventListener('input', e => styleSelection({ backgroundColor: e.target.value }));
+// 给选中文字包裹行内样式（字号 / 字色 / 底色 / 行高）
+function styleSelection(style) {
+  const ed = $('#artContent'); ed.focus();
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return toast('先在正文里选中要排版的文字');
+  const range = sel.getRangeAt(0);
+  if (range.collapsed) return toast('先选中文字再设置字号 / 颜色 / 行高');
+  pushEdHist();
+  const span = document.createElement('span');
+  Object.assign(span.style, style);
+  try { range.surroundContents(span); }
+  catch {
+    const frag = range.extractContents();
+    span.appendChild(frag);
+    range.insertNode(span);
+  }
+  sel.removeAllRanges();
+  updateArtStats(); saveCurrent(false);
+}
+function insertTable() {
+  const ed = $('#artContent'); ed.focus();
+  pushEdHist();
+  const row = '<tr><td>单元格</td><td>单元格</td><td>单元格</td></tr>';
+  document.execCommand('insertHTML', false, '<table><tbody>' + row + row + '</tbody></table><p></p>');
+  updateArtStats(); saveCurrent(false);
+}
 function insertMaterialImage() {
   if (!S.materials.length) return toast('先去素材库上传图片');
   const ed = $('#artContent');
@@ -266,6 +353,7 @@ function doInsertImage(m) {
   if (!m) return;
   const ed = $('#artContent');
   ed.focus();
+  pushEdHist();
   const sel = window.getSelection();
   sel.removeAllRanges();
   if (savedRange && ed.contains(savedRange.startContainer)) {
@@ -387,6 +475,32 @@ $('#btnUsePath').onclick = async () => {
   } catch (e) { toast(e.message); }
 };
 
+// ---------- 音频 ----------
+function setAudio(v) {
+  S.current.audioFile = v.file; S.current.audioPath = null; S.current.audioName = v.name;
+  $('#audioStatus').textContent = '已选音频：' + v.name;
+}
+$('#artAudioFile').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  if (!S.current) return toast('先新建或选择一篇文章');
+  const rd = new FileReader();
+  rd.onload = async () => {
+    const v = await api('/api/audios', { method: 'POST', body: JSON.stringify({ name: f.name, base64: rd.result }) });
+    setAudio(v); toast('音频已上传入库');
+  };
+  rd.readAsDataURL(f);
+});
+$('#btnUseAudioPath').onclick = async () => {
+  const p = $('#artAudioPath').value.trim();
+  if (!p) return toast('请填写音频文件的本地路径');
+  if (!S.current) return toast('先新建或选择一篇文章');
+  try {
+    const v = await api('/api/audios/path', { method: 'POST', body: JSON.stringify({ path: p }) });
+    setAudio(v); toast('音频已登记');
+  } catch (e) { toast(e.message); }
+};
+
 // ---------- 账号 ----------
 async function loadAccounts() {
   S.accounts = await api('/api/accounts');
@@ -485,26 +599,27 @@ $('#btnInstallBrowser').onclick = async () => {
 // ---------- 发布 ----------
 function renderPubArticleSelect() {
   const sel = $('#pubArticle'); if (!sel) return;
-  sel.innerHTML = S.articles.map(a => `<option value="${a.id}">${esc(a.title)}</option>`).join('') || '<option value="">（没有文章）</option>';
+  sel.innerHTML = S.articles.map(a => `<option value="${a.id}">${esc(a.title)}${a.type === 'video' ? '（视频）' : a.type === 'audio' ? '（音频）' : ''}</option>`).join('') || '<option value="">（没有文章）</option>';
 }
 function renderPubAccounts() {
   const el = $('#pubAccounts'); if (!el) return;
   const art = S.articles.find(a => a.id === $('#pubArticle').value);
-  const need = art && art.type === 'video' ? 'video' : 'article';
+  const need = art ? (art.type === 'video' ? 'video' : art.type === 'audio' ? 'audio' : 'article') : 'article';
   updatePubModeHint(art);
   const html = S.platforms.map(p => {
     if (p.mode && p.mode !== 'both' && p.mode !== need) return '';
+    if (need === 'audio' && !p.audio) return '';
     const accs = S.accounts.filter(a => a.platformId === p.id);
     if (!accs.length) return '';
     const chip = p.contentType === 'markdown' ? '<span class="mode-chip md">Markdown</span>' : '<span class="mode-chip rt">富文本</span>';
-    return `<div class="pub-group">${p.name}${p.region === 'global' ? ' · 海外' : ''}${p.experimental ? '（实验性）' : ''} · ${need === 'video' ? '视频' : '图文'} ${chip}</div>` + accs.map(a => `
+    return `<div class="pub-group">${p.name}${p.region === 'global' ? ' · 海外' : ''}${p.experimental ? '（实验性）' : ''} · ${need === 'video' ? '视频' : need === 'audio' ? '音频' : '图文'} ${chip}</div>` + accs.map(a => `
       <label class="pub-acc">
         <input type="checkbox" value="${a.id}" ${a.status !== 'loggedIn' ? 'data-maybe="1"' : ''}>
         ${platAvatar(a.platformId)}
         <span class="who"><span class="n">${esc(a.name)}</span> ${accStatusPill(a)}</span>
       </label>`).join('');
   }).join('');
-  el.innerHTML = html || `<span class="muted">${need === 'video' ? '没有可发视频的账号：先去「账号」页添加抖音 / 快手 / B站视频等' : '先去「账号」页添加并登录账号'}</span>`;
+  el.innerHTML = html || `<span class="muted">${need === 'video' ? '没有可发视频的账号：先去「账号」页添加抖音 / 快手 / B站视频等' : need === 'audio' ? '没有可发音频的账号：目前仅小红书支持音频笔记，先去「账号」页添加' : '先去「账号」页添加并登录账号'}</span>`;
   el.querySelectorAll('input[data-maybe]').forEach(cb => cb.addEventListener('change', () => {
     cb.closest('.pub-acc').style.background = cb.checked ? '#fff8e6' : '';
   }));
