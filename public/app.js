@@ -968,3 +968,20 @@ $('#btnConnSave').onclick = () => {
     toast('启动失败: ' + e.message + (API ? '，请检查电脑端是否已启动' : ''));
   }
 })();
+// ---- Electron 退出确认：主进程关闭窗口前先问一次，取消就不退出 ----
+let exitPending = false;
+if (window.freeflow && typeof window.freeflow.onAskExit === 'function') {
+  window.freeflow.onAskExit(() => {
+    if (exitPending) return; // 重复点关闭 / 快捷键不再弹第二个窗
+    exitPending = true;
+    $('#exitModal').style.display = 'flex';
+  });
+  const replyExit = ok => {
+    exitPending = false;
+    $('#exitModal').style.display = 'none';
+    window.freeflow.exitReply(ok);
+  };
+  $('#exitConfirm').onclick = () => replyExit(true);
+  $('#exitCancel').onclick = () => replyExit(false);
+  $('#exitModal').addEventListener('click', e => { if (e.target.id === 'exitModal') replyExit(false); });
+}
