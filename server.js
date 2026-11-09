@@ -7,7 +7,7 @@ const platforms = require('./platforms');
 const auto = require('./automation');
 const { createTask, startScheduler, log } = require('./runner');
 
-const PORT = 8917;
+const PORT = process.env.FREEFLOW_PORT || 8917;
 const app = express();
 // 允许手机版（同局域网内的 APK）跨域调用接口；桌面端同源请求不受影响
 app.use((req, res, next) => {

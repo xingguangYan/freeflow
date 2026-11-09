@@ -173,7 +173,9 @@ select { cursor: pointer; }
 .editor p { margin: 9px 0; }
 .editor img { max-width: 100%; border-radius: 6px; margin: 8px 0; }
 .cover-row { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-top: 1px solid var(--line-soft); }
-.cover-thumb img { height: 36px; border-radius: 6px; border: 1px solid var(--line); }
+.cover-thumb { display: inline-flex; align-items: center; }
+.cover-thumb img { height: 64px; width: 96px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); box-shadow: 0 1px 4px rgba(0,0,0,.08); cursor: pointer; }
+.cover-thumb img:hover { transform: scale(1.6); transition: transform .18s; z-index: 5; position: relative; box-shadow: 0 6px 20px rgba(0,0,0,.2); }
 
 /* ---------- 账号 ---------- */
 .add-form { display: flex; gap: 10px; padding: 14px 16px; }
@@ -327,3 +329,14 @@ select { cursor: pointer; }
 .editor hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
 .md-preview table td { border: 1px solid var(--line); padding: 4px 8px; }
 .md-preview blockquote { border-left: 3px solid var(--line); padding: 2px 10px; color: var(--muted); margin: 8px 0; }
+
+/* ---------- 发布前预览 ---------- */
+.modal-wide { width: 720px; }
+.preview-body { max-height: 52vh; overflow: auto; border: 1px dashed var(--line); border-radius: 8px; padding: 14px 18px; margin-bottom: 12px; background: var(--panel-2); }
+.preview-body .pv-title { font-size: 18px; margin: 0 0 4px; }
+.preview-body .pv-meta { font-size: 12px; color: var(--muted); margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line-soft); }
+.preview-body .pv-content { line-height: 1.85; font-size: 14px; }
+.preview-body .pv-content img { max-width: 100%; border-radius: 6px; margin: 8px 0; }
+.preview-body .pv-content h1, .preview-body .pv-content h2, .preview-body .pv-content h3 { margin: 14px 0 8px; }
+.preview-body .pv-content table { border-collapse: collapse; }
+.preview-body .pv-content td { border: 1px solid var(--line); padding: 6px 10px; }

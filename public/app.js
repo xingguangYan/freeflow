@@ -194,7 +194,26 @@ $('#btnNewArticle').onclick = async () => {
   S.articles.push(a); renderArticleList(); await selectArticle(a.id); updateTopStats(); toast('已新建文章');
 };
 async function saveCurrent(notify = true) {
-  if (!S.current) return;
+  // 没有选中任何文章时，编辑器里的内容直接保存为新草稿，并自动选中它
+  if (!S.current) {
+    const mode = ($('#view-articles input[name="artMode"]:checked') || {}).value || 'richtext';
+    const title = $('#artTitle').value.trim();
+    const content = mode === 'markdown' ? $('#artMd').value : $('#artContent').innerHTML;
+    const plain = (mode === 'markdown' ? $('#artMd').value : (($('#artContent').innerText) || '')).trim();
+    if (!title && !plain) return toast('内容为空，先写标题或正文再保存');
+    try {
+      const body = { type: 'article', mode, title: title || '未命名', content, cover: null, tags: '', videoFile: null, videoPath: null, audioFile: null, audioPath: null };
+      const a = await api('/api/articles', { method: 'POST', body: JSON.stringify(body) });
+      S.articles.push(a);
+      S.current = a;
+      $('#editorTitle').textContent = a.title;
+      renderArticleList();
+      renderPubArticleSelect();
+      updateTopStats();
+      if (notify) toast('已保存为新文章');
+    } catch (e) { toast('保存失败：' + e.message); }
+    return;
+  }
   const type = ($('#view-articles input[name="artType"]:checked') || {}).value || 'article';
   const mode = ($('#view-articles input[name="artMode"]:checked') || {}).value || 'richtext';
   const content = mode === 'markdown' ? $('#artMd').value : $('#artContent').innerHTML;
@@ -619,7 +638,8 @@ function renderPubAccounts() {
         <span class="who"><span class="n">${esc(a.name)}</span> ${accStatusPill(a)}</span>
       </label>`).join('');
   }).join('');
-  el.innerHTML = html || `<span class="muted">${need === 'video' ? '没有可发视频的账号：先去「账号」页添加抖音 / 快手 / B站视频等' : need === 'audio' ? '没有可发音频的账号：目前仅小红书支持音频笔记，先去「账号」页添加' : '先去「账号」页添加并登录账号'}</span>`;
+    const btnAll = $('#btnPubAll'); if (btnAll) btnAll.textContent = '全选';
+el.innerHTML = html || `<span class="muted">${need === 'video' ? '没有可发视频的账号：先去「账号」页添加抖音 / 快手 / B站视频等' : need === 'audio' ? '没有可发音频的账号：目前仅小红书支持音频笔记，先去「账号」页添加' : '先去「账号」页添加并登录账号'}</span>`;
   el.querySelectorAll('input[data-maybe]').forEach(cb => cb.addEventListener('change', () => {
     cb.closest('.pub-acc').style.background = cb.checked ? '#fff8e6' : '';
   }));
@@ -630,18 +650,65 @@ function updatePubModeHint(art) {
   const md = art.mode === 'markdown';
   el.innerHTML = `当前文章 <span class="mode-chip ${md ? 'md' : 'rt'}">${md ? 'Markdown' : '富文本'}</span>，发布时按平台模式自动转换（Markdown ⇄ 富文本），不会乱发。`;
 }
+$('#btnPubAll').onclick = () => {
+  const boxes = [...document.querySelectorAll('#pubAccounts input[type="checkbox"]')];
+  if (!boxes.length) return toast('没有可选的账号，先去「账号」页添加');
+  const allOn = boxes.length > 0 && boxes.every(b => b.checked);
+  boxes.forEach(b => {
+    b.checked = !allOn;
+    const row = b.closest('.pub-acc');
+    if (row) row.style.background = (b.checked && b.dataset.maybe) ? '#fff8e6' : '';
+  });
+  $('#btnPubAll').textContent = allOn ? '全选' : '清空';
+  toast(allOn ? '已取消全部勾选' : '已全选 ' + boxes.length + ' 个账号');
+};
 $('#pubArticle').addEventListener('change', renderPubAccounts);
 function renderPublish() { renderPubArticleSelect(); renderPubAccounts(); renderTasks(); }
+// 发布前先弹预览，确认平台/账号/内容后再创建任务
+let pendingPublish = null;
+function openPublishPreview(articleId, accountIds) {
+  const art = S.articles.find(a => a.id === articleId);
+  const mode = (art && art.mode) || 'richtext';
+  const html = mode === 'markdown' ? mdToHtmlLocal((art && art.content) || '') : ((art && art.content) || '');
+  // 手机端素材地址补全（桌面端 API 前缀为空，不影响）
+  const body = html.replace(/src="\/\//g, 'src="' + (window.__apiBase || '') + '/');
+  const text = ((art && art.content) || '').replace(/<[^>]+>/g, '');
+  const when = $('#pubSchedule').value ? '定时 ' + $('#pubSchedule').value.replace('T', ' ') : '立即发布';
+  $('#previewBody').innerHTML =
+    '<h2 class="pv-title">' + esc((art && art.title) || '(未命名)') + '</h2>' +
+    '<div class="pv-meta">' + (mode === 'markdown' ? 'Markdown' : '富文本') + ' · 约 ' + text.replace(/\s/g, '').length + ' 字 · ' + when + '</div>' +
+    '<div class="pv-content">' + body + '</div>';
+  const targets = accountIds.map(id => {
+    const a = S.accounts.find(x => x.id === id);
+    return platName(a && a.platformId) + ':' + (a ? a.name : id);
+  });
+  $('#previewTargets').textContent = '将发布到 ' + targets.length + ' 个账号：' + targets.join('、');
+  $('#previewModal').style.display = 'flex';
+}
 $('#btnPublish').onclick = async () => {
   const articleId = $('#pubArticle').value;
   const accountIds = $$('#pubAccounts input:checked').map(i => i.value);
   if (!articleId) return toast('请先写一篇文章');
   if (!accountIds.length) return toast('至少勾选一个账号');
+  if (!S.articles.some(a => a.id === articleId)) return toast('文章不存在，请重新选择');
+  openPublishPreview(articleId, accountIds);
+};
+function closePublishPreview() { $('#previewModal').style.display = 'none'; pendingPublish = null; }
+$('#previewCancel').onclick = closePublishPreview;
+$('#previewModal').addEventListener('click', e => { if (e.target.id === 'previewModal') closePublishPreview(); });
+$('#previewConfirm').onclick = async () => {
+  if (!confirm('确认发布到以上账号？')) return;
+  const articleId = $('#pubArticle').value;
+  const accountIds = $$('#pubAccounts input:checked').map(i => i.value);
+  if (!articleId || !accountIds.length) { closePublishPreview(); return toast('请重新选择文章与账号'); }
   const scheduledAt = $('#pubSchedule').value || null;
-  await api('/api/tasks', { method: 'POST', body: JSON.stringify({ articleId, accountIds, scheduledAt }) });
-  $('#pubSchedule').value = '';
-  toast(scheduledAt ? '已加入定时队列' : '开始分发，浏览器会逐个打开平台编辑页');
-  renderTasks(); startTaskPoll();
+  closePublishPreview();
+  try {
+    await api('/api/tasks', { method: 'POST', body: JSON.stringify({ articleId, accountIds, scheduledAt }) });
+    $('#pubSchedule').value = '';
+    toast(scheduledAt ? '已加入定时队列' : '开始分发，浏览器会逐个打开平台编辑页');
+    renderTasks(); startTaskPoll();
+  } catch (e) { toast('创建发布任务失败：' + e.message); }
 };
 async function renderTasks() {
   const tasks = await api('/api/tasks');
