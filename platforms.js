@@ -52,10 +52,12 @@ module.exports = [
     loginCookies: ['BDUSS'],
     editorUrls: ['https://baijiahao.baidu.com/builder/rc/edit?type=news', 'https://baijiahao.baidu.com/builder/rc/home'],
     preClickText: ['发布文章', '写文章'],
-    titleSelectors: ['input[placeholder*="标题"]', '.editor-title input', 'textarea[placeholder*="标题"]'],
-    contentSelectors: ['.editor-content', '[contenteditable="true"]'],
+    titleSelectors: ['input[placeholder*="标题"]', '.editor-title input', '.title-input', '#title', 'textarea[placeholder*="标题"]'],
+   contentSelectors: ['.editor-content', '.ql-editor', '.ProseMirror', '#ueditor_0', '.edui-body-container', '[contenteditable="true"]', 'textarea'],
     contentType: 'richtext',
-    coverInput: 'input[type="file"]'
+   coverInput: 'input[type="file"]',
+   publishTexts: ['发布文章', '发布'],
+   note: '百家号标题与正文都是编辑区，正文填充会跳过标题元素；发布按钮在顶部导航。'
   },
   {
     id: 'zhihu', name: '知乎', region: 'cn', group: '图文', color: '#0084ff',
@@ -127,11 +129,12 @@ module.exports = [
   {
     id: 'csdn', name: 'CSDN', region: 'cn', group: '图文', color: '#fc5531',
     loginUrl: 'https://passport.csdn.net/login',
-    loggedInUrl: /(csdn\.net\/(u|home|blog|user)|editor\.csdn\.net|blog\.csdn\.net\/)/,
+    loggedInUrl: /(csdn\.net\/(u|home|blog|user)|editor\.csdn\.net|mp\.csdn\.net|blog\.csdn\.net\/)/,
     loginCookies: ['UserName', 'UserToken'],
-    editorUrls: ['https://editor.csdn.net/?not_checkout=1', 'https://editor.csdn.net/md?not_checkout=1', 'https://editor.csdn.net/md'],
-    titleSelectors: ['#txtTitle', '.article-title input', 'input[placeholder*="标题"]', '#articleTitle'],
-    contentSelectors: ['#ueditor_0', '.edui-body-container', '.editor', '#editor', '.ql-editor', '[contenteditable="true"]', 'textarea'],
+    // 新编辑器在前；不再回退 md 编辑器（Markdown 编辑器里粘富文本会乱码）
+    editorUrls: ['https://mp.csdn.net/mp_blog/creation/editor', 'https://editor.csdn.net/?not_checkout=1'],
+    titleSelectors: ['#txtTitle', '.article-title input', '.title-input', '#title', 'input[placeholder*="标题"]', '#articleTitle'],
+    contentSelectors: ['.ql-editor', '.article-content', '.pe-editor', '#ueditor_0', '.edui-body-container', '.ProseMirror', '[contenteditable="true"]', 'textarea'],
     contentType: 'richtext',
     titleMax: 100,
     publishTexts: ['发布文章'],

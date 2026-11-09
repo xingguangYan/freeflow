@@ -245,28 +245,41 @@ function mdToHtml(md) {
 }
 
 // ---------- 填充 ----------
-async function pickVisible(page, selectors) {
+async function pickVisible(page, selectors, skip) {
   for (const s of selectors) {
     try {
-      const loc = page.locator(s).first();
-      if (await loc.count() > 0 && await loc.isVisible().catch(() => false)) return loc;
+      const locs = page.locator(s);
+      const n = await locs.count();
+      for (let i = 0; i < n; i++) {
+        const loc = locs.nth(i);
+        if (!(await loc.isVisible().catch(() => false))) continue;
+        if (skip && await skip(loc)) continue;
+        return loc;
+      }
     } catch { /* 继续候选 */ }
   }
   return null;
 }
 // 在主文档和所有 iframe 里找可见元素（公众号编辑器在 iframe 里）。
-async function pickVisibleIn(page, selectors) {
+async function pickVisibleIn(page, selectors, skip) {
   const scopes = [page];
   try {
     for (const f of page.frames()) if (f !== page.mainFrame()) scopes.push(f);
   } catch { /* */ }
   for (const scope of scopes) {
     try {
-      const loc = await pickVisible(scope, selectors);
+      const loc = await pickVisible(scope, selectors, skip);
       if (loc) return { scope, loc };
     } catch { /* 跨域 iframe 可能读不到 */ }
   }
   return null;
+}
+// 百家号等平台的标题本身是 contenteditable，通用正文选择器会先误中标题；命中标题元素时跳过
+async function isTitleEl(loc) {
+  try {
+    const sig = await loc.evaluate(el => [el.id, String(el.className), el.getAttribute('placeholder') || '', el.getAttribute('aria-label') || ''].join(' '));
+    return /标题|题目|title/i.test(sig);
+  } catch { return false; }
 }
 // 等编辑器真正渲染出来，再开始填。返回 {title, content} 或 null。
 async function waitForEditor(page, platform, timeoutMs = 25000) {
@@ -349,7 +362,8 @@ async function fillContent(page, platform, html) {
   // 富文本平台若是 UEditor（CSDN / 公众号），先走官方实例 API，比模拟粘贴可靠得多
   if (!isMd && await ueFill(page, payload, head, tail, probe.length)) return true;
   const candidates = [...(platform.contentSelectors || []), ...GENERIC_CONTENT];
-  const hit = await pickVisibleIn(page, candidates);
+  // 百家号等平台的标题也是可编辑区，通用选择器会先匹配到标题 → 正文候选里排除标题元素
+  const hit = await pickVisibleIn(page, candidates, isTitleEl);
   if (!hit) return false;
   const { loc } = hit;
   // 草稿保护：编辑器里已有无关内容时不覆盖，交给手动模式
@@ -477,7 +491,7 @@ async function waitForPublishSuccess(page, startUrl, timeoutMs = 20000) {
 async function checkEditorFormatting(page, platform, html) {
   const issues = [];
   if (!platform || platform.contentType !== 'richtext') return { level: 'ok', issues };
-  const hit = await pickVisibleIn(page, [...(platform.contentSelectors || []), ...GENERIC_CONTENT]);
+  const hit = await pickVisibleIn(page, [...(platform.contentSelectors || []), ...GENERIC_CONTENT], isTitleEl);
   if (!hit) return { level: 'warn', issues: ['排版检查：未找到编辑器，无法核对'] };
   const { loc } = hit;
   const info = await loc.evaluate(el => {
