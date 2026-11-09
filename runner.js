@@ -129,9 +129,10 @@ async function publishToAccount(account, article, coverPath) {
   if (!ready) log('', account.id, 'warn', '编辑器识别较慢，仍尝试填充');
   const accName = account.name, pName = platform.name;
   let filledTitle = false, filledContent = false;
+ let contentHtml = '';
   try {
     const artMode = article.mode || 'richtext';
-    let contentHtml = artMode === 'markdown' ? auto.mdToHtml(article.content) : article.content;
+   contentHtml = artMode === 'markdown' ? auto.mdToHtml(article.content) : article.content;
     contentHtml = auto.inlineLocalImages(contentHtml);
     filledTitle = await auto.fillTitle(cur, platform, article.title);
     filledContent = await auto.fillContent(cur, platform, contentHtml);
@@ -139,6 +140,8 @@ async function publishToAccount(account, article, coverPath) {
   } catch (e) {
     log('', account.id, 'error', '填充异常: ' + e.message);
   }
+  log('', account.id, filledTitle && filledContent ? 'info' : 'warn',
+    `填充结果 标题:${filledTitle ? '成功' : '失败'} 正文:${filledContent ? '成功' : '失败'}（正文约 ${auto.htmlToText(article.content || '').replace(/\s+/g, '').length} 字）`);
 
   // 半自动平台（如微信）：不点发布，留给用户手动确认
   if (platform.semi) {
@@ -156,30 +159,44 @@ async function publishToAccount(account, article, coverPath) {
     return { status: 'manual', message: '自动填充未成功，请手动粘贴发布（内容已复制）', keepCtx: ctx, page: cur };
   }
 
+  // 发布前排版检查：富文本平台里不能残留 Markdown 符号、图片不能丢
+  if (filledTitle && filledContent) {
+    const fmt = await auto.checkEditorFormatting(cur, platform, contentHtml);
+    if (fmt.level === 'bad') {
+      log('', account.id, 'error', '排版检查未通过：' + fmt.issues.join('；') + '，已停止自动发布');
+      return { status: 'manual', message: '排版异常：' + fmt.issues.join('；') + '（窗口已保留，请检查后手动发布）', keepCtx: ctx, page: cur };
+    }
+    if (fmt.issues.length) log('', account.id, 'warn', '排版提醒：' + fmt.issues.join('；'));
+  }
+
   await cur.waitForTimeout(1500);
+  const startUrl = cur.url();
   const btn = platform.previewThenPublish
     ? await auto.clickPreviewThenPublish(cur)
-    : await auto.clickPublishRetry(cur, 15000);
+    : await auto.clickPublishRetry(cur, 15000, platform);
   let ok = false, detail = '已点击「' + (btn || '?') + '」';
   if (btn) {
-    // 等待发布成功：常见提示或地址栏变化
-    let hit = await cur.waitForSelector('text=/发布成功|已发布|发布完成|提交成功/', { timeout: 12000 }).catch(() => null);
-    if (!hit) {
-      const cbtn = await auto.clickConfirm(cur);
+    // 等待发布结果：成功提示 / 跳到后台页 / 发布中继续等
+    let res = await auto.waitForPublishSuccess(cur, startUrl, 10000);
+    if (!res.ok) {
+      const cbtn = await auto.clickConfirm(cur, platform);
       if (cbtn) {
         detail += `，已确认「${cbtn}」`;
-        hit = await cur.waitForSelector('text=/发布成功|已发布|发布完成|提交成功/', { timeout: 15000 }).catch(() => null);
+        res = await auto.waitForPublishSuccess(cur, startUrl, 15000);
       }
     }
-    ok = !!hit;
-    if (!ok) ok = /success|published|manage|list|detail|articles|content/.test(cur.url());
-    if (!ok) detail += '；未检测到明确成功提示，请到平台后台核对';
+    ok = res.ok;
+    if (!ok) detail += res.how === 'closed' ? '；页面已关闭' : '；未检测到发布成功提示';
   } else {
     detail = '没找到发布按钮，可能需要手动点';
   }
   log('', account.id, ok ? 'info' : 'warn', `${pName}(${accName}) ${ok ? '发布成功' : detail}`);
-  await auto.closeCtx(ctx);
-  return { status: ok ? 'ok' : 'manual', message: ok ? '发布成功' : detail };
+  if (ok) {
+    await auto.closeCtx(ctx);
+    return { status: 'ok', message: '发布成功' };
+  }
+  // 发布未确认：保留浏览器窗口，让用户核对/手动补发，确认发出后再手动关闭
+  return { status: 'manual', message: detail + '，请在浏览器核对并手动完成（窗口已保留）', keepCtx: ctx, page: cur };
 }
 
 // 媒体发布流程（视频 / 音频）
@@ -274,24 +291,27 @@ async function publishMediaToAccount(account, article, mediaPath) {
     return { status: 'manual', message: '自动填写未成功，请手动完成（内容已复制）', keepCtx: ctx, page: cur };
   }
   await cur.waitForTimeout(1500);
-  const btn = await auto.clickPublishRetry(cur, 15000);
+  const startUrl = cur.url();
+ const btn = await auto.clickPublishRetry(cur, 15000, platform);
   let ok = false, detail = '已点击「' + (btn || '?') + '」';
   if (btn) {
-    let hit = await cur.waitForSelector('text=/发布成功|已发布|发布完成|投稿成功|提交成功/', { timeout: 12000 }).catch(() => null);
-    if (!hit) {
-      const cbtn = await auto.clickConfirm(cur);
+    let res = await auto.waitForPublishSuccess(cur, startUrl, 10000);
+    if (!res.ok) {
+     const cbtn = await auto.clickConfirm(cur, platform);
       if (cbtn) {
         detail += `，已确认「${cbtn}」`;
-        hit = await cur.waitForSelector('text=/发布成功|已发布|发布完成|投稿成功|提交成功/', { timeout: 15000 }).catch(() => null);
+        res = await auto.waitForPublishSuccess(cur, startUrl, 15000);
       }
     }
-    ok = !!hit;
-    if (!ok) ok = /success|published|manage|list|detail|content/.test(cur.url());
-    if (!ok) detail += '；未检测到明确成功提示，请到平台后台核对';
+    ok = res.ok;
+    if (!ok) detail += res.how === 'closed' ? '；页面已关闭' : '；未检测到发布成功提示';
   } else { detail = '没找到发布按钮，可能需要手动点'; }
   log('', account.id, ok ? 'info' : 'warn', `${platform.name}(${account.name}) ${kind}${ok ? '发布成功' : detail}`);
-  await auto.closeCtx(ctx);
-  return { status: ok ? 'ok' : 'manual', message: ok ? '发布成功' : detail };
+  if (ok) {
+    await auto.closeCtx(ctx);
+    return { status: 'ok', message: '发布成功' };
+  }
+  return { status: 'manual', message: detail + '，请在浏览器核对并手动完成（窗口已保留）', keepCtx: ctx, page: cur };
 }
 
 // 执行一个任务（可能包含多账号）
