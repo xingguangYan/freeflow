@@ -168,6 +168,34 @@ app.post('/api/accounts/:id/recheck', async (req, res) => {
   touchAccount(acc.id, { status: 'loggedIn', lastLoginAt: Date.now() });
   res.json({ ok: true });
 });
+// 一键检测登录态：逐个打开浏览器读 cookie，不要求重新扫码。body.accountIds 可选，默认全部账号
+app.post('/api/accounts/check-all', async (req, res) => {
+  const ids = Array.isArray(req.body && req.body.accountIds) && req.body.accountIds.length
+    ? req.body.accountIds
+    : accounts().map(a => a.id);
+  const results = {};
+  for (const id of ids) {
+    const acc = accounts().find(a => a.id === id);
+    if (!acc) { results[id] = { loggedIn: false, error: '账号不存在' }; continue; }
+    const p = platforms.find(x => x.id === acc.platformId);
+    if (!p) { results[id] = { loggedIn: false, error: '平台不存在' }; continue; }
+    try {
+      const ctx = await auto.launch(acc.id);
+      const page = ctx.pages()[0] || await ctx.newPage();
+      await page.goto(p.loginUrl, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {});
+      await page.waitForTimeout(1500).catch(() => {});
+      const ok = await auto.checkLoggedIn(ctx, p, page);
+      await auto.closeCtx(ctx);
+      touchAccount(acc.id, ok ? { status: 'loggedIn', lastLoginAt: Date.now(), loginSession: null } : { status: 'expired', loginSession: null });
+      log('', acc.id, ok ? 'info' : 'warn', `${p.name} 登录态检测：${ok ? '已登录' : '未登录'}`);
+      results[id] = { loggedIn: ok };
+    } catch (e) {
+      log('', acc.id, 'error', '登录态检测失败: ' + e.message);
+      results[id] = { loggedIn: false, error: e.message };
+    }
+  }
+  res.json({ results });
+});
 
 // ---------- 文章 ----------
 app.get('/api/articles', (req, res) => res.json(load('articles.json', [])));
@@ -385,6 +413,105 @@ app.post('/api/stats/collect', async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// ---------- 我的大模型（导入自己的 LLM + 本地素材 + 生成草稿） ----------
+const llm = require('./llm');
+// 回传给前端时 Key 永远打码，日志里也不许出现完整 Key
+function llmSafe(m) { return llm.modelForClient(m); }
+app.get('/api/llm', (req, res) => {
+  const c = llm.cfg();
+  res.json({ models: c.models.map(llmSafe), materials: c.materials, txtExt: llm.TXT_EXT });
+});
+app.post('/api/llm/models', (req, res) => {
+  const { name, provider, endpoint, apiKey, model, enabled, temperature, maxTokens, systemPrompt } = req.body || {};
+  if (!endpoint) return res.status(400).json({ error: '请填写服务地址' });
+  const c = llm.cfg();
+  const m = { id: uid('llm'), name: name || '我的模型', provider: provider || '', endpoint, apiKey: apiKey || '', model: model || '', enabled: enabled !== false, temperature: typeof temperature === 'number' ? temperature : 0.7, maxTokens: maxTokens > 0 ? Math.min(maxTokens, 32000) : 3000, systemPrompt: String(systemPrompt || ''), createdAt: Date.now() };
+  c.models.unshift(m); llm.saveCfg(c);
+  res.json(llmSafe(m));
+});
+app.put('/api/llm/models/:id', (req, res) => {
+  const c = llm.cfg();
+  const m = c.models.find(x => x.id === req.params.id);
+  if (!m) return res.status(404).json({ error: '模型不存在' });
+  const { name, provider, endpoint, apiKey, model, enabled, temperature, maxTokens, systemPrompt } = req.body || {};
+  if (name !== undefined) m.name = name;
+  if (provider !== undefined) m.provider = provider;
+  if (endpoint !== undefined) m.endpoint = endpoint;
+  if (apiKey !== undefined && apiKey !== '') m.apiKey = apiKey; // 空串 = 保持原 Key（编辑时不明文回传）
+  if (model !== undefined) m.model = model;
+  if (enabled !== undefined) m.enabled = enabled;
+  if (temperature !== undefined && !isNaN(temperature)) m.temperature = Math.max(0, Math.min(2, temperature));
+  if (maxTokens !== undefined && maxTokens > 0) m.maxTokens = Math.min(maxTokens, 32000);
+  if (systemPrompt !== undefined) m.systemPrompt = String(systemPrompt).slice(0, 4000);
+  llm.saveCfg(c);
+  res.json(llmSafe(m));
+});
+app.delete('/api/llm/models/:id', (req, res) => {
+  const c = llm.cfg();
+  c.models = c.models.filter(x => x.id !== req.params.id);
+  llm.saveCfg(c);
+  res.json({ ok: true });
+});
+// 连通性测试：用「当前表单内容」（可含未保存的 Key）；给 modelId 且未填 Key 时沿用已存配置
+app.post('/api/llm/models/test', async (req, res) => {
+  try {
+    let entry = req.body || {};
+    if (entry.modelId && !entry.apiKey) {
+      const c = llm.cfg();
+      const saved = c.models.find(x => x.id === entry.modelId);
+      if (saved) entry = { ...saved, ...entry };
+    }
+    const r = await llm.testModel(entry);
+    log('', '', r.ok ? 'info' : 'warn', '大模型连通测试：' + (r.ok ? `成功（${r.latencyMs}ms，回复 ${r.reply}）` : '失败 ' + r.error));
+    res.json(r);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.get('/api/llm/providers', (req, res) => { res.json({ providers: llm.getProviders() }); });
+// 还没保存配置时，用当前填的地址/Key 直接拉模型列表
+app.post('/api/llm/models/list-anonymous', async (req, res) => {
+  try { res.json(await llm.listModels(req.body || {})); } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.post('/api/llm/models/:id/list-models', async (req, res) => {
+  const c = llm.cfg();
+  const m = c.models.find(x => x.id === req.params.id);
+  if (!m) return res.status(404).json({ error: '模型不存在' });
+  try { res.json(await llm.listModels(m)); } catch (e) { res.status(500).json({ error: e.message }); }
+});
+// 本地素材：只接受文本文件，内容由前端读取后传入（不主动扫描磁盘）
+app.post('/api/llm/materials', (req, res) => {
+  const r = llm.addMaterial(req.body && req.body.name, req.body && req.body.text);
+  if (r.error) return res.status(400).json({ error: r.error });
+  res.json(r.material);
+});
+app.delete('/api/llm/materials/:id', (req, res) => { llm.removeMaterial(req.params.id); res.json({ ok: true }); });
+app.get('/api/llm/materials/:id', (req, res) => {
+  const m = llm.readMaterial(req.params.id);
+  if (!m) return res.status(404).json({ error: '素材不存在' });
+  res.json(m);
+});
+// 生成文章（会话隔离：按选中的模型 + 素材发请求）
+app.post('/api/llm/generate', async (req, res) => {
+  const { modelId, prompt, materialIds } = req.body || {};
+  if (!modelId) return res.status(400).json({ error: '请选择模型' });
+  if (!String(prompt || '').trim()) return res.status(400).json({ error: '请填写写作主题/要求' });
+  try {
+    const r = await llm.generate(modelId, prompt, materialIds);
+    res.json(r);
+  } catch (e) {
+    log('', '', 'error', '大模型生成失败: ' + e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+// 生成的结果保存进草稿箱（articles 里标 status=draft）
+app.post('/api/llm/to-draft', (req, res) => {
+  const { title, content } = req.body || {};
+  if (!String(title || '').trim() && !String(content || '').trim()) return res.status(400).json({ error: '内容为空' });
+  const a = load('articles.json', []);
+  const art = { id: uid('art'), title: String(title || 'AI 生成草稿').slice(0, 100), content: String(content || ''), mode: 'richtext', type: 'article', status: 'draft', cover: '', summary: '', tags: '', createdAt: Date.now() };
+  a.unshift(art); save('articles.json', a);
+  res.json(art);
 });
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
