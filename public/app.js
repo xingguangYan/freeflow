@@ -975,12 +975,25 @@ function renderLlmResult(r) {
   el.innerHTML = `
     <div class="task">
       <div class="head"><strong>生成结果</strong><span class="muted">${esc(r.model || '')}</span>
-        <span class="task-ops"><button class="btn small primary" id="llmToDraft">保存到草稿箱</button>
-        <button class="btn small" id="llmToPublish">去发布</button></span></div>
+        <span class="task-ops">
+          <button class="btn small" id="llmPreviewTab">预览</button>
+          <button class="btn small" id="llmEditTab">编辑源码</button>
+          <button class="btn small primary" id="llmToDraft">保存到草稿箱</button>
+          <button class="btn small" id="llmToPublish">去发布</button></span></div>
       <div style="padding:8px 0"><input id="llmGenTitle" value="${esc(r.title)}" style="width:100%;padding:6px;box-sizing:border-box"></div>
-      <div><textarea id="llmGenContent" rows="10" style="width:100%;padding:8px;box-sizing:border-box;font-family:inherit">${esc(r.content)}</textarea></div>
+      <div id="llmGenPreview" style="border:1px solid #e2e6ea;border-radius:8px;padding:12px;max-height:320px;overflow:auto;background:#fff"></div>
+      <div id="llmGenEditWrap" style="display:none"><textarea id="llmGenContent" rows="10" style="width:100%;padding:8px;box-sizing:border-box;font-family:ui-monospace,Consolas,monospace;font-size:13px"></textarea></div>
     </div>`;
-  const save = async () => api('/api/llm/to-draft', { method: 'POST', body: JSON.stringify({ title: $('#llmGenTitle').value, content: $('#llmGenContent').value }) });
+  // 预览渲染 HTML，编辑视图才显示源码；保存时以预览内容为准（编辑过的以编辑框为准）
+  let dirty = false;
+  const preview = $('#llmGenPreview'), editBox = $('#llmGenContent'), editWrap = $('#llmGenEditWrap');
+  const renderPreview = () => { preview.innerHTML = '<h2 style="margin:0 0 8px">' + esc($('#llmGenTitle').value) + '</h2>' + editBox.value; };
+  editBox.value = r.content;
+  renderPreview();
+  editBox.addEventListener('input', () => { dirty = true; renderPreview(); });
+  $('#llmPreviewTab').onclick = () => { preview.style.display = 'block'; editWrap.style.display = 'none'; };
+  $('#llmEditTab').onclick = () => { preview.style.display = 'none'; editWrap.style.display = 'block'; editBox.focus(); };
+  const save = async () => api('/api/llm/to-draft', { method: 'POST', body: JSON.stringify({ title: $('#llmGenTitle').value, content: dirty ? editBox.value : editBox.value }) });
   $('#llmToDraft').onclick = async () => { const art = await save(); await loadArticles(); toast('已保存到草稿箱：' + art.title); };
   $('#llmToPublish').onclick = async () => {
     const art = await save(); await loadArticles();
@@ -1094,7 +1107,13 @@ function renderStats() {
   const prev = sel.value;
   sel.innerHTML = S.accounts.map(a => `<option value="${a.id}">${esc(a.name)} · ${platName(a.platformId)}${latest.has(a.id) ? '' : '（无数据）'}</option>`).join('');
   sel.value = prev && S.accounts.some(a => a.id === prev) ? prev : (withStats[0] ? withStats[0].id : (S.accounts[0] ? S.accounts[0].id : ''));
-  drawStatsChart(sel.value);
+  // 平台下拉：按账号覆盖的平台填充；切换平台看该平台全部账号的汇总趋势
+  const psel = $('#statsPlatform');
+  const pprev = psel.value;
+  const pids = [...new Set(S.accounts.map(a => a.platformId))];
+  psel.innerHTML = '<option value="">全部平台</option>' + pids.map(pid => '<option value="' + pid + '">' + platName(pid) + '</option>').join('');
+  if (pprev && pids.includes(pprev)) psel.value = pprev;
+  drawStatsTrend();
 }
 function fmtNum(n) {
   if (n == null) return '-';
@@ -1157,7 +1176,84 @@ async function collectOne(accountId) {
   await loadStats();
   return r;
 }
-$('#statsAccount').addEventListener('change', e => drawStatsChart(e.target.value));
+// 趋势图视图：以「最后改动」的选择为准——选账号看单账号，选平台看该平台汇总（按天累加）
+let statsTrendMode = { type: 'all' };
+function drawStatsTrend() {
+  if (statsTrendMode.type === 'account') return drawStatsChart(statsTrendMode.value);
+  return drawStatsChartPlatform(statsTrendMode.type === 'platform' ? statsTrendMode.value : '');
+}
+$('#statsAccount').addEventListener('change', e => { statsTrendMode = { type: 'account', value: e.target.value }; drawStatsTrend(); });
+$('#statsPlatform').addEventListener('change', e => { statsTrendMode = e.target.value ? { type: 'platform', value: e.target.value } : { type: 'all' }; drawStatsTrend(); });
+function drawStatsChartPlatform(platformId) {
+  const canvas = $('#statsChart'); if (!canvas) return;
+  const pids = platformId ? [platformId] : [...new Set(S.stats.map(s => s.platformId))];
+  const snaps = S.stats.filter(s => pids.includes(s.platformId));
+  const title = platformId ? platName(platformId) + '（全部账号汇总）' : '全部平台汇总';
+  $('#statsTrendTitle').textContent = title + '（' + snaps.length + ' 条采集记录）';
+  const dpr = window.devicePixelRatio || 1, w = canvas.clientWidth || 760, h = 220;
+  canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+  const g = canvas.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  if (!snaps.length) {
+    g.fillStyle = getComputedStyle(document.body).color; g.globalAlpha = .5; g.font = '13px sans-serif';
+    g.fillText('暂无数据，先采集一次', 20, 40); g.globalAlpha = 1; return;
+  }
+  // 按天分桶：每个指标当天取各账号「当天最近一次采集」的值之和
+  const days = new Map();
+  for (const s of snaps) {
+    const day = new Date(s.ts).toISOString().slice(0, 10);
+    if (!days.has(day)) days.set(day, {});
+    const bucket = days.get(day);
+    const accKey = s.accountId;
+    for (const k of Object.keys(METRIC_LABELS)) {
+      const v = s.metrics && s.metrics[k];
+      if (v == null) continue;
+      bucket[accKey + ':' + k] = v;
+    }
+  }
+  const dayList = [...days.keys()].sort().slice(-12);
+  const series = {};
+  for (const k of Object.keys(METRIC_LABELS)) {
+    const vals = [];
+    for (const d of dayList) {
+      const b = days.get(d);
+      let sum = 0, has = false;
+      for (const [key, v] of Object.entries(b)) {
+        if (key.endsWith(':' + k)) { sum += v; has = true; }
+      }
+      vals.push(has ? sum : 0);
+    }
+    if (vals.some(v => v > 0)) series[k] = vals;
+  }
+  const max = Math.max(1, ...Object.values(series).flat());
+  g.strokeStyle = 'rgba(128,128,128,.25)'; g.lineWidth = 1; g.fillStyle = 'rgba(128,128,128,.9)'; g.font = '11px sans-serif';
+  const pad = { l: 48, r: 16, t: 22, b: 30 };
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + (h - pad.t - pad.b) * i / 4;
+    g.beginPath(); g.moveTo(pad.l, y); g.lineTo(w - pad.r, y); g.stroke();
+    g.fillText(fmtNum(Math.round(max * (1 - i / 4))), 4, y + 4);
+  }
+  const n = dayList.length;
+  for (const [k, vals] of Object.entries(series)) {
+    g.strokeStyle = METRIC_COLORS[k]; g.lineWidth = 2.2; g.beginPath();
+    vals.forEach((v, i) => {
+      const x = pad.l + (w - pad.l - pad.r) * (n <= 1 ? 0 : i / (n - 1));
+      const y = pad.t + (h - pad.t - pad.b) * (1 - v / max);
+      i ? g.lineTo(x, y) : g.moveTo(x, y);
+    });
+    g.stroke();
+  }
+  let lx = pad.l;
+  for (const [k] of Object.entries(series)) {
+    g.fillStyle = METRIC_COLORS[k]; g.fillRect(lx, 6, 10, 3);
+    g.fillStyle = getComputedStyle(document.body).color; g.font = '11px sans-serif';
+    g.fillText(METRIC_LABELS[k], lx + 14, 11);
+    lx += 14 + g.measureText(METRIC_LABELS[k]).width + 16;
+  }
+  g.fillStyle = 'rgba(128,128,128,.9)';
+  g.fillText(dayList[0] || '', pad.l, h - 8);
+  if (n > 1) g.fillText(dayList[n - 1] || '', w - pad.r - 70, h - 8);
+}
 $('#btnCollectOne').onclick = async () => {
   const id = $('#statsAccount').value;
   if (!id) return toast('先添加账号');

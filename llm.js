@@ -190,10 +190,35 @@ async function generate(modelId, prompt, materialIds) {
   }
   const j = await r.json().catch(() => null);
   const content = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content || '';
-  const lines = String(content).trim().split(/\r?\n/).filter(l => l.trim());
-  const title = (lines[0] || '').replace(/^#+\s*/, '').replace(/^《|》$/g, '').slice(0, 60) || 'AI 生成文章';
-  const body = lines.slice(1).join('\n').trim() || lines.join('\n');
+  // 部分模型会用 ```html 包裹正文；裸 markdown 也要转成可读 HTML
+  let body = String(content || '').trim();
+  body = body.replace(/^```(?:html|HTML)?\s*\r?\n/, '').replace(/\r?\n```\s*$/, '');
+  let lines = body.split(/\r?\n/).filter(l => l.trim());
+  let title = (lines[0] || '').replace(/^#+\s*/, '').replace(/^《|》$/, '').slice(0, 60);
+  if (!/^<\w+/.test(lines[0] || '')) {
+    // 第一行不是 HTML 标签 = 纯标题行，正文去掉标题后转段落
+    const rest = lines.slice(1).join('\n').trim() || body;
+    body = /^<\w+/.test(rest) ? rest : mdToHtml(rest);
+  } else {
+    title = '';
+    body = mdToHtml(body);
+  }
+  if (!title) title = 'AI 生成文章';
   return { title, content: body, model: entry.model || entry.name };
+}
+
+// 极简 Markdown → HTML，避免把模型返回的普通文本当 JavaScript 源码展示
+function mdToHtml(md) {
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return String(md).split(/\r?\n{2,}/).map(block => {
+    const t = block.trim();
+    if (!t) return '';
+    if (/^<(h[1-6]|p|ul|ol|li|blockquote|pre|img|table|strong|em)\b/i.test(t)) return t;
+    if (/^(#{1,6})\s/.test(t)) { const lv = t.match(/^#+/)[0].length; return `<h${Math.min(lv, 3)}>${esc(t.replace(/^#+\s*/, ''))}</h${Math.min(lv, 3)}>`; }
+    if (/^\s*[-*]\s/m.test(t)) return '<ul>' + t.split(/\r?\n/).map(l => l.replace(/^\s*[-*]\s*/, '').replace(/^(\d+)\.\s*/, '')).map(l => `<li>${esc(l)}</li>`).join('') + '</ul>';
+    if (/^\s*\d+\.\s/m.test(t)) return '<ol>' + t.split(/\r?\n/).map(l => `<li>${esc(l.replace(/^\s*\d+\.\s*/, ''))}</li>`).join('') + '</ol>';
+    return '<p>' + esc(t).replace(/\r?\n/g, '<br>') + '</p>';
+  }).filter(Boolean).join('\n');
 }
 
 module.exports = {

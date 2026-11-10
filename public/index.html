@@ -218,14 +218,13 @@
     <section id="view-stats" class="view">
       <div class="panel">
         <div class="panel-head"><strong>平台数据看板</strong><span class="stats-ops">
-          <select id="statsAccount"></select>
           <button class="btn small primary" id="btnCollectOne">采集选中账号</button>
           <button class="btn small" id="btnCollectAll">采集全部已登录</button>
         </span></div>
         <div id="statsCards" class="stats-cards"></div>
       </div>
       <div class="panel">
-        <div class="panel-head"><strong>指标趋势</strong><span id="statsTrendTitle" class="muted">选择账号查看</span></div>
+        <div class="panel-head"><strong>指标趋势</strong><span class="stats-ops"><select id="statsPlatform"></select><select id="statsAccount"></select></span><span id="statsTrendTitle" class="muted">选择账号查看</span></div>
         <canvas id="statsChart" height="220"></canvas>
       </div>
       <div class="note">数据来自各平台后台页面公开显示的数字，按关键词自动识别，属于估算值，仅供趋势参考。</div>
