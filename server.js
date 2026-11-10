@@ -436,6 +436,14 @@ app.post('/api/messages/reply', async (req, res) => {
     res.status(500).json({ error: e.message, draft: true });
   }
 });
+const update = require('./update');
+app.get('/api/update-check', async (req, res) => {
+  try {
+    res.json(await update.check(req.query.force === '1'));
+  } catch (e) {
+    res.status(502).json({ error: '检查更新失败：' + e.message, current: require('./package.json').version });
+  }
+});
 app.post('/api/stats/collect', async (req, res) => {
   const acc = accounts().find(a => a.id === (req.body && req.body.accountId));
   if (!acc) return res.status(404).json({ error: '账号不存在' });

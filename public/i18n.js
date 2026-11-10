@@ -70,6 +70,12 @@ const EN = {
   '退出自由发？': 'Quit Freeflow?',
   '未保存的修改请先保存；进行中的发布任务可稍后在任务页查看。': 'Save unsaved changes first; running publish tasks can be checked later in Task history.',
   '确认退出': 'Quit',
+  // 检查更新
+  '检查更新': 'Check for updates', '发现新版本': 'New version available',
+  '当前 v': 'current v', '（本次更新没有说明）': '(no release notes for this version)',
+  '稍后再说': 'Later', '前往下载': 'Download',
+  '正在检查更新…': 'Checking for updates…', '当前已是最新版本 v': 'You are on the latest version v',
+  '检查更新失败：': 'Update check failed: ',
   // 手机遥控
   '连接电脑端': 'Connect to desktop',
   '手机与电脑连同一 WiFi，填电脑端地址（如 192.168.1.10:8917）即可遥控发布。留空 = 只编辑不发布。': 'With the phone and computer on the same Wi-Fi, fill in the desktop address (e.g. 192.168.1.10:8917) to publish remotely. Empty means edit only.',

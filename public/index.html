@@ -74,6 +74,7 @@
           <button data-theme="rose" class="tc-rose" title="玫瑰"></button>
         </div>
         <span id="serverState" class="pill ok" style="cursor:pointer" title="点击设置电脑端地址（手机遥控用）">本地服务运行中</span>
+        <button class="btn small" id="btnUpdate" title="检查更新">检查更新</button>
         <button class="btn small" id="btnLang" title="中文 / English">EN</button>
       </div>
     </header>
@@ -348,6 +349,17 @@
     <div class="modal-foot">
       <button class="btn" id="exitCancel">取消</button>
       <button class="btn danger" id="exitConfirm" style="border-color:var(--err-fg)">确认退出</button>
+    </div>
+  </div>
+</div>
+<div id="updateModal" class="modal-mask" style="display:none">
+  <div class="modal" style="max-width:420px">
+    <h3>发现新版本</h3>
+    <p id="updateVer" class="muted" style="margin:4px 0 8px"></p>
+    <div id="updateBody" style="max-height:220px;overflow:auto;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13px;white-space:pre-wrap"></div>
+    <div class="modal-foot">
+      <button class="btn" id="updateLater">稍后再说</button>
+      <button class="btn primary" id="updateGoto">前往下载</button>
     </div>
   </div>
 </div>

@@ -1414,11 +1414,34 @@ $('#btnConnSave').onclick = () => {
     await Promise.all([loadArticles(), loadAccounts(), loadMaterials()]);
     if (API) $('#serverState').textContent = '已连接 ' + API.replace(/^https?:\/\//, '');
     toast('自由发已就绪：先添加账号并登录，再写文章一键分发');
+    checkUpdate(true); // 每次上线自动检测，有新版本才弹窗
   } catch (e) {
     $('#serverState').textContent = '服务连接失败'; $('#serverState').className = 'pill err';
     toast('启动失败: ' + e.message + (API ? '，请检查电脑端是否已启动' : ''));
   }
 })();
+// ---------- 检查更新 ----------
+function showUpdateModal(info) {
+  $('#updateVer').textContent = info.latest + '（' + t('当前 v') + info.current + '）';
+  $('#updateBody').textContent = info.body || t('（本次更新没有说明）');
+  $('#updateGoto').dataset.url = info.url;
+  $('#updateModal').style.display = 'flex';
+}
+async function checkUpdate(silent) {
+  if (!silent) toast(t('正在检查更新…'));
+  try {
+    const info = await api('/api/update-check');
+    if (info && info.hasUpdate) showUpdateModal(info);
+    else if (!silent) toast(t('当前已是最新版本 v') + info.current);
+  } catch (e) {
+    if (!silent) toast(t('检查更新失败：') + (e && e.message || ''));
+  }
+}
+$('#btnUpdate').onclick = () => checkUpdate(false);
+$('#updateLater').onclick = () => { $('#updateModal').style.display = 'none'; };
+$('#updateModal').addEventListener('click', e => { if (e.target.id === 'updateModal') $('#updateModal').style.display = 'none'; });
+$('#updateGoto').onclick = e => { window.open(e.currentTarget.dataset.url, '_blank'); };
+
 // ---- Electron 退出确认：主进程关闭窗口前先问一次，取消就不退出 ----
 let exitPending = false;
 if (window.freeflow && typeof window.freeflow.onAskExit === 'function') {
