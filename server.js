@@ -402,6 +402,40 @@ app.post('/api/browser/install-chromium', async (req, res) => {
   }
 });
 app.get('/api/stats', (req, res) => res.json(stats.list()));
+
+// ---------- 统一消息中心 ----------
+const messages = require('./messages');
+app.get('/api/messages', (req, res) => res.json(messages.listAll()));
+app.get('/api/messages/drafts', (req, res) => res.json(messages.drafts()));
+app.post('/api/messages/collect', async (req, res) => {
+  try {
+    const ids = (req.body && req.body.accountIds) || [];
+    const accs = load('accounts.json', []).filter(a => !ids.length || ids.includes(a.id));
+    const results = {};
+    for (const acc of accs) {
+      try { results[acc.id] = messages.store(await messages.collect(acc)); }
+      catch (e) { results[acc.id] = { platformId: acc.platformId, error: e.message }; }
+    }
+    res.json({ results });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.post('/api/messages/reply', async (req, res) => {
+  const { accountId, from, text, draftOnly } = req.body || {};
+  if (!accountId || !from) return res.status(400).json({ error: '缺少账号或回复对象' });
+  const acc = load('accounts.json', []).find(a => a.id === accountId);
+  if (!acc) return res.status(404).json({ error: '账号不存在' });
+  if (draftOnly) { messages.saveDraft(accountId, from, text); return res.json({ ok: true, draft: true }); }
+  log('', acc.id, 'info', '私信回复: -> ' + from);
+  try {
+    const r = await messages.reply(acc, from, text);
+    messages.dropDraft(accountId, from);
+    res.json(r);
+  } catch (e) {
+    messages.saveDraft(accountId, from, text); // 失败留草稿，可重试
+    log('', acc.id, 'error', '私信回复失败: ' + e.message);
+    res.status(500).json({ error: e.message, draft: true });
+  }
+});
 app.post('/api/stats/collect', async (req, res) => {
   const acc = accounts().find(a => a.id === (req.body && req.body.accountId));
   if (!acc) return res.status(404).json({ error: '账号不存在' });

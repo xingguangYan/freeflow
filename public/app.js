@@ -105,6 +105,7 @@ function switchView(view, title) {
   if (view === 'publish') { renderPublish(); startTaskPoll(); }
   if (view === 'logs') loadLogs();
   if (view === 'stats') loadStats();
+  if (view === 'messages') loadMessages();
   if (view === 'llm') loadLlm();
 }
 $('#nav').addEventListener('click', e => {
@@ -775,6 +776,118 @@ function startTaskPoll() {
   }, 4000);
 }
 $('#btnRefreshTasks').onclick = renderTasks;
+// ---------- 消息中心 ----------
+let MSG = { snaps: {}, drafts: {}, filter: { platform: '', type: '', unread: false } };
+let MSG_REPLY = null; // {accountId, platformId, platformName, accountName, from}
+async function loadMessages() {
+  const [snaps, drafts] = await Promise.all([
+    api('/api/messages').catch(() => ({})),
+    api('/api/messages/drafts').catch(() => ({})),
+  ]);
+  MSG.snaps = snaps || {}; MSG.drafts = drafts || {};
+  renderMsgPlatformOptions(); renderMessages();
+}
+function renderMsgPlatformOptions() {
+  const sel = $('#msgPlatform'); if (!sel) return;
+  const prev = sel.value;
+  const pids = [...new Set(S.accounts.map(a => a.platformId))];
+  sel.innerHTML = '<option value="">全部平台</option>' + pids.map(pid => '<option value="' + pid + '">' + platName(pid) + '</option>').join('');
+  if (prev && pids.includes(prev)) sel.value = prev;
+}
+function msgItems() {
+  const f = MSG.filter;
+  const out = [];
+  for (const snap of Object.values(MSG.snaps)) {
+    if (!snap || !snap.items) continue;
+    if (f.platform && snap.platformId !== f.platform) continue;
+    for (const it of snap.items) {
+      if (f.type && it.type !== f.type) continue;
+      if (f.unread && !it.unread) continue;
+      out.push({ ...it, accountId: snap.accountId, platformId: snap.platformId, platformName: snap.platformName, supported: snap.supported, note: snap.note });
+    }
+  }
+  return out;
+}
+function renderMessages() {
+  const el = $('#msgList'); if (!el) return;
+  const items = msgItems();
+  if (!Object.keys(MSG.snaps).length) { el.innerHTML = '<div class="empty">还没有消息<br>点上方「采集消息」拉取各平台私信/评论/通知</div>'; return; }
+  const cards = S.accounts.map(a => {
+    const snap = MSG.snaps[a.id];
+    if (!snap) return '';
+    if (MSG.filter.platform && snap.platformId !== MSG.filter.platform) return '';
+    const items2 = (snap.items || []).filter(it =>
+      (!MSG.filter.type || it.type === MSG.filter.type) && (!MSG.filter.unread || it.unread));
+    const unreadN = (snap.items || []).filter(i => i.unread).length;
+    if (snap.supported === false) return '<div class="stat-card"><div class="row1">' + platAvatar(a.platformId) + '<div style="flex:1;min-width:0"><div class="name">' + esc(a.name) + '</div><div class="muted">' + platName(a.platformId) + ' · 未接入消息页</div></div></div><div class="stat-pills"><span class="muted">' + esc(snap.note || '') + '</span></div></div>';
+    if (snap.logged === false) return '<div class="stat-card"><div class="row1">' + platAvatar(a.platformId) + '<div style="flex:1;min-width:0"><div class="name">' + esc(a.name) + '</div><div class="muted">' + platName(a.platformId) + ' · 未登录</div></div></div><div class="stat-pills"><span class="muted">' + esc(snap.note || '') + ' <button class="btn small" data-msglogin="' + a.id + '">去登录</button></span></div></div>';
+    if (!items2.length) return '';
+    return '<div class="stat-card"><div class="row1">' + platAvatar(a.platformId) + '<div style="flex:1;min-width:0"><div class="name">' + esc(a.name) + ' · ' + platName(a.platformId) + (unreadN ? ' · <span class="pill ok">未读 ' + unreadN + '</span>' : '') + '</div></div></div>' +
+      '<div style="margin-top:6px">' + items2.map(it => {
+        const draft = MSG.drafts[a.id + '|' + it.from];
+        return '<div class="msg-row" style="display:flex;gap:8px;align-items:center;padding:5px 2px;border-top:1px solid #eee">' +
+          '<span class="pill ' + (it.unread ? 'ok' : 'gray') + '">' + (it.type === 'dm' ? '私信' : it.type === 'comment' ? '评论' : '通知') + '</span>' +
+          '<div style="flex:1;min-width:0"><strong>' + esc(it.from) + '</strong> <span class="muted">' + esc(it.time || '') + (it.unread ? ' · 未读' : '') + '</span><div style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(it.snippet) + (draft ? ' <span class="pill warn">有草稿</span>' : '') + '</div></div>' +
+          '<button class="btn small" data-msgreply="' + a.id + '|' + it.from + '">回复</button></div>';
+      }).join('') + '</div></div>';
+  }).filter(Boolean).join('');
+  el.innerHTML = cards || '<div class="empty">当前筛选下没有消息</div>';
+  $('#msgList [data-msgreply]').forEach(b => b.onclick = () => {
+    const [accountId, from] = b.dataset.msgreply.split('|');
+    openMsgReply(accountId, from);
+  });
+  $('#msgList [data-msglogin]').forEach(b => b.onclick = () => switchView('accounts', '账号'));
+}
+function openMsgReply(accountId, from) {
+  const a = S.accounts.find(x => x.id === accountId);
+  if (!a) return toast('账号不存在');
+  MSG_REPLY = { accountId, platformId: a.platformId, platformName: platName(a.platformId), accountName: a.name, from };
+  $('#msgReplyTarget').textContent = from;
+  $('#msgReplyMeta').textContent = '发到：' + MSG_REPLY.platformName + ' · ' + a.name;
+  const draft = MSG.drafts[accountId + '|' + from];
+  $('#msgReplyText').value = draft ? draft.text : '';
+  $('#msgReplyStatus').textContent = draft ? '已恢复上次失败的草稿' : '';
+  $('#msgReplyPanel').style.display = 'block';
+}
+$('#btnMsgReplyCancel').onclick = () => { $('#msgReplyPanel').style.display = 'none'; MSG_REPLY = null; };
+$('#btnMsgDraft').onclick = async () => {
+  if (!MSG_REPLY) return;
+  const text = $('#msgReplyText').value.trim();
+  if (!text) return toast('内容为空');
+  await api('/api/messages/reply', { method: 'POST', body: JSON.stringify({ accountId: MSG_REPLY.accountId, from: MSG_REPLY.from, text, draftOnly: true }) }).catch(() => {});
+  MSG.drafts[MSG_REPLY.accountId + '|' + MSG_REPLY.from] = { text };
+  $('#msgReplyStatus').textContent = '草稿已保存（仅本机）';
+  renderMessages();
+};
+$('#btnMsgReply').onclick = async () => {
+  if (!MSG_REPLY) return;
+  const text = $('#msgReplyText').value.trim();
+  if (!text) return toast('请输入回复内容');
+  const btn = $('#btnMsgReply'); btn.disabled = true;
+  $('#msgReplyStatus').textContent = '发送中…（已打开平台页面，请勿关闭）';
+  try {
+    await api('/api/messages/reply', { method: 'POST', body: JSON.stringify({ accountId: MSG_REPLY.accountId, from: MSG_REPLY.from, text }) });
+    $('#msgReplyStatus').textContent = '✓ 已发送（以平台页面实际结果为准）';
+    MSG_REPLY = null; $('#msgReplyPanel').style.display = 'none';
+    await loadMessages();
+  } catch (e) {
+    $('#msgReplyStatus').textContent = '✗ ' + e.message + '（草稿已保留，可点「发送回复」重试）';
+  } finally { btn.disabled = false; }
+};
+$('#msgPlatform').onchange = e => { MSG.filter.platform = e.target.value; renderMessages(); };
+$('#msgType').onchange = e => { MSG.filter.type = e.target.value; renderMessages(); };
+$('#msgUnreadOnly').onchange = e => { MSG.filter.unread = e.target.checked; renderMessages(); };
+$('#btnMsgCollect').onclick = async () => {
+  const btn = $('#btnMsgCollect'); btn.disabled = true; btn.textContent = '采集中…';
+  toast('正在逐个打开平台消息页，请稍候（全自动，勿关闭弹出的浏览器）');
+  try {
+    await api('/api/messages/collect', { method: 'POST', body: JSON.stringify({}) });
+    await loadMessages();
+    toast('消息采集完成');
+  } catch (e) { toast('采集失败: ' + e.message); }
+  finally { btn.disabled = false; btn.textContent = '采集消息'; }
+};
+
 // ---------- 我的大模型（厂商预设 + 自定义端点 + 本地素材） ----------
 let SLLM = { models: [], materials: [], editing: null, selectedModel: '', providers: [] };
 async function loadLlm() {
