@@ -35,6 +35,10 @@
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
         <span>数据</span>
       </button>
+      <button class="nav-item" data-view="llm">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="12" rx="2"/><path d="M8 20h8M12 16v4"/><path d="M9 8.5h.01M15 8.5h.01M9.5 11.5h5"/></svg>
+        <span>我的大模型</span>
+      </button>
       <button class="nav-item" data-view="sensitive">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21.5s7.5-3.8 7.5-9.5V5.2L12 2.5 4.5 5.2v6.8c0 5.7 7.5 9.5 7.5 9.5z"/></svg>
         <span>违禁词</span>
@@ -200,9 +204,9 @@
           <div class="panel-head"><strong>发布设置</strong></div>
           <div class="form-row"><label>文章</label><select id="pubArticle"></select></div>
           <div class="form-row"><label>模式</label><div id="pubModeHint" class="muted"></div></div>
-          <div class="form-row"><label>账号</label><div id="pubAccounts" class="pub-accounts"></div></div>
-          <div class="form-row"><label>定时</label><input type="datetime-local" id="pubSchedule"> <span class="muted">留空 = 立即发布</span></div>
-          <div class="form-row"><label></label><button class="btn primary" id="btnPublish">开始分发</button></div>
+          <div class="form-row"><label>账号</label><div id="pubAccounts" class="pub-accounts"></div><button class="btn small" id="btnPubAll" title="勾选/取消全部平台账号">全选</button><button class="btn small" id="btnCheckAllLogin" title="打开浏览器逐个检查勾选账号的登录态，不要求重新扫码">一键检测登录</button></div>
+          <div class="form-row"><label>定时</label><input type="datetime-local" id="pubSchedule"> <span class="muted">想定时才选时间，不选直接立即发布</span></div>
+          <div class="form-row"><label></label><button class="btn primary" id="btnPublishNow">立即发布</button> <button class="btn" id="btnPublishScheduled" title="用上方选择的时间定时发布">定时发布</button></div>
         </div>
         <div class="panel">
           <div class="panel-head"><strong>任务记录</strong><span><button class="btn small danger" id="btnClearTasks">清空历史</button> <button class="btn small" id="btnRefreshTasks">刷新</button></span></div>
@@ -227,6 +231,41 @@
       <div class="note">数据来自各平台后台页面公开显示的数字，按关键词自动识别，属于估算值，仅供趋势参考。</div>
     </section>
 
+    <section id="view-llm" class="view">
+      <div class="split">
+        <div class="panel">
+          <div class="panel-head"><strong>模型配置</strong><span class="muted">OpenAI 兼容接口或本地服务；Key 只存本机，不明文显示</span><span><button class="btn small primary" id="btnLlmAdd">+ 新增模型</button></span></div>
+          <div id="llmModelList"></div>
+          <div id="llmForm" style="display:none;background:#f6f7f9;border-radius:10px;padding:12px;margin-top:10px">
+            <div class="form-row"><label>配置名称</label><input id="llmName" placeholder="如：我的 GPT / 本地 Ollama"></div>
+            <div class="form-row"><label>服务商</label><select id="llmProvider"><option value="">自定义（手填地址）</option></select> <span class="muted" id="llmProviderNote"></span></div>
+            <div class="form-row"><label>服务地址</label><input id="llmEndpoint" placeholder="https://api.openai.com/v1 或 http://127.0.0.1:11434/v1"></div>
+            <div class="form-row"><label>API Key</label><input id="llmKey" type="password" placeholder="本地服务可留空"><span class="muted" id="llmKeyHint"></span></div>
+            <div class="form-row"><label>模型</label><select id="llmModelPreset" disabled><option value="">— 常用模型 —</option></select> <input id="llmModelInput" placeholder="模型名，如 gpt-4o-mini / qwen2.5:7b" style="min-width:200px"> <button class="btn small" id="btnLlmFetch">拉取列表</button></div>
+            <div class="form-row"><label></label><div id="llmModelFetched" style="margin:4px 0"></div></div>
+            <details style="margin:6px 0"><summary class="muted" style="cursor:pointer">高级设置（温度 / 长度 / 系统提示词）</summary>
+              <div class="form-row"><label>温度</label><input id="llmTemperature" type="number" min="0" max="2" step="0.1" value="0.7" style="width:90px"> <span class="muted">0=严谨，2=发散，写文章建议 0.7</span></div>
+              <div class="form-row"><label>最大长度</label><input id="llmMaxTokens" type="number" min="100" step="100" value="3000" style="width:110px"> <span class="muted">单次生成上限</span></div>
+              <div class="form-row"><label>系统提示词</label><textarea id="llmSystemPrompt" rows="2" placeholder="留空用默认写作助手人设；可写「你是 XX 领域博主，语气幽默」"></textarea></div>
+            </details>
+            <div class="form-row"><label></label>
+              <button class="btn small" id="btnLlmTest">连通性测试</button>
+              <button class="btn small primary" id="btnLlmSave">保存配置</button>
+              <button class="btn small" id="btnLlmCancel">取消</button>
+              <span id="llmTestResult" class="muted"></span>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><strong>创作素材（本地读取）</strong><span class="muted">只读取你选择的文件，删掉就不再参与生成</span></div>
+          <div class="upload-zone" id="llmDropZone">点击选择本地 txt / md / json / csv 文本文件<input type="file" id="llmFileInput" accept=".txt,.md,.markdown,.json,.csv,.text,.log,.html,.htm" hidden></div>
+          <div id="llmMaterialList" style="margin:10px 0"></div>
+          <div class="form-row"><label>主题/要求</label><textarea id="llmPrompt" rows="3" placeholder="如：用素材里的数据写一篇 800 字的 AI 工具评测，语气轻松"></textarea></div>
+          <div class="form-row"><label></label><button class="btn primary" id="btnLlmGenerate" disabled>用选中模型生成文章</button></div>
+          <div id="llmResult"></div>
+        </div>
+      </div>
+    </section>
     <section id="view-materials" class="view">
       <div class="panel">
         <div class="panel-head"><strong>素材库</strong><span class="muted">图片存在本机 data/materials/；正文插入图片时从这里选</span></div>
@@ -264,7 +303,28 @@
     <div class="modal-foot"><button class="btn" id="imgModalClose">取消</button></div>
   </div>
 </div>
+<div id="previewModal" class="modal-mask" style="display:none">
+  <div class="modal modal-wide">
+    <h3>发布前预览</h3>
+    <div id="previewBody" class="preview-body"></div>
+    <div class="modal-foot">
+      <span id="previewTargets" class="muted" style="margin-right:auto;text-align:left"></span>
+      <button class="btn" id="previewCancel">返回修改</button>
+      <button class="btn primary" id="previewConfirm">确认发布</button>
+    </div>
+  </div>
+</div>
 <div id="toasts"></div>
+<div id="exitModal" class="modal-mask" style="display:none">
+  <div class="modal" style="max-width:340px">
+    <h3>退出自由发？</h3>
+    <p class="muted" style="margin:4px 0 12px">未保存的修改请先保存；进行中的发布任务可稍后在任务页查看。</p>
+    <div class="modal-foot">
+      <button class="btn" id="exitCancel">取消</button>
+      <button class="btn danger" id="exitConfirm" style="border-color:var(--err-fg)">确认退出</button>
+    </div>
+  </div>
+</div>
 <div id="connModal" class="modal-mask" style="display:none">
   <div class="modal">
     <h3>连接电脑端</h3>

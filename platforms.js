@@ -12,6 +12,7 @@ module.exports = [
   // ==================== 国内 · 图文 ====================
   {
     id: 'wechat', name: '微信公众号', region: 'cn', group: '图文', color: '#07c160',
+    titleMax: 64,
     loginUrl: 'https://mp.weixin.qq.com/',
     loggedInUrl: /mp\.weixin\.qq\.com\/cgi-bin\/(home|appmsg|appmsgpublish|message|profile)/,
     loginCookies: ['slave_sid', 'master_sid'],
@@ -31,6 +32,7 @@ module.exports = [
   },
   {
     id: 'toutiao', name: '头条号', region: 'cn', group: '图文', color: '#f04142',
+    titleMax: 30,
     loginUrl: 'https://mp.toutiao.com/profile_v4/index',
     loggedInUrl: /mp\.toutiao\.com\/profile_v4\/(index|graphic|manage|analysis)/,
     loginCookies: ['sessionid'],
@@ -50,13 +52,16 @@ module.exports = [
     loginCookies: ['BDUSS'],
     editorUrls: ['https://baijiahao.baidu.com/builder/rc/edit?type=news', 'https://baijiahao.baidu.com/builder/rc/home'],
     preClickText: ['发布文章', '写文章'],
-    titleSelectors: ['input[placeholder*="标题"]', '.editor-title input', 'textarea[placeholder*="标题"]'],
-    contentSelectors: ['.editor-content', '[contenteditable="true"]'],
+    titleSelectors: ['input[placeholder*="标题"]', '.editor-title input', '.title-input', '#title', 'textarea[placeholder*="标题"]'],
+   contentSelectors: ['.editor-content', '.ql-editor', '.ProseMirror', '#ueditor_0', '.edui-body-container', '[contenteditable="true"]', 'textarea'],
     contentType: 'richtext',
-    coverInput: 'input[type="file"]'
+   coverInput: 'input[type="file"]',
+   publishTexts: ['发布文章', '发布'],
+   note: '百家号标题与正文都是编辑区，正文填充会跳过标题元素；发布按钮在顶部导航。'
   },
   {
     id: 'zhihu', name: '知乎', region: 'cn', group: '图文', color: '#0084ff',
+    titleMax: 100,
     loginUrl: 'https://www.zhihu.com/signin',
     loggedInUrl: /zhihu\.com\/(people|creator|zhuanlan|settings)/,
     loginCookies: ['z_c0'],
@@ -64,10 +69,12 @@ module.exports = [
     titleSelectors: ['input[placeholder*="标题"]', '.WriteIndex-titleInput input', 'textarea[placeholder*="标题"]'],
     contentSelectors: ['.ProseMirror', '[contenteditable="true"]'],
     contentType: 'richtext',
-    coverInput: 'input[type="file"]'
+   coverInput: 'input[type="file"]',
+   publishTexts: ['发布']
   },
   {
     id: 'xiaohongshu', name: '小红书', region: 'cn', group: '图文/笔记', color: '#ff2442',
+    titleMax: 20,
     mode: 'both',
     audio: true,
     loginUrl: 'https://creator.xiaohongshu.com/login',
@@ -87,10 +94,12 @@ module.exports = [
     contentSelectors: ['textarea[placeholder*="正文"]', '#description', '[contenteditable="true"]'],
     contentType: 'richtext',
     coverInput: 'input[type="file"]',
+    publishTexts: ['发布笔记', '发布'],
     note: '小红书按内容自动选择入口：有封面走图文笔记（先传图），纯文字走长文章，视频/音频走对应入口。'
   },
   {
     id: 'bilibili', name: 'B站专栏', region: 'cn', group: '图文', color: '#fb7299',
+    titleMax: 40,
     loginUrl: 'https://passport.bilibili.com/login',
     loggedInUrl: /(member\.bilibili\.com|bilibili\.com\/(home|v|read))/,
     loginCookies: ['SESSDATA'],
@@ -98,6 +107,7 @@ module.exports = [
     titleSelectors: ['.article-title input', 'input[placeholder*="标题"]', 'input[name="title"]'],
     contentSelectors: ['.ql-editor', '#textarea', '[contenteditable="true"]', 'textarea'],
     contentType: 'richtext',
+    publishTexts: ['发布'],
     note: 'B站专栏是富文本编辑器（Quill），内容以富文本粘贴，保留格式且不显示 Markdown 符号。'
   },
   {
@@ -113,21 +123,26 @@ module.exports = [
     },
     titleSelectors: ['input[placeholder*="标题"]', '.ant-input', '#title'],
     contentSelectors: ['.CodeMirror', '.ace_editor', 'textarea', '[contenteditable="true"]'],
-    contentType: 'markdown'
+   contentType: 'markdown',
+   publishTexts: ['发布文章']
   },
   {
     id: 'csdn', name: 'CSDN', region: 'cn', group: '图文', color: '#fc5531',
     loginUrl: 'https://passport.csdn.net/login',
-    loggedInUrl: /(csdn\.net\/(u|home|blog|user)|editor\.csdn\.net|blog\.csdn\.net\/)/,
+    loggedInUrl: /(csdn\.net\/(u|home|blog|user)|editor\.csdn\.net|mp\.csdn\.net|blog\.csdn\.net\/)/,
     loginCookies: ['UserName', 'UserToken'],
-    editorUrls: ['https://editor.csdn.net/md?not_checkout=1', 'https://editor.csdn.net/md'],
-    titleSelectors: ['.article-title input', 'input[placeholder*="标题"]', '#articleTitle'],
-    contentSelectors: ['.v-note-edit textarea', '.cm-editor .cm-content', '#editor .cm-content', '.ql-editor', '[contenteditable="true"]', 'textarea'],
-    contentType: 'markdown',
-    note: 'CSDN 是 Markdown 编辑器，内容自动转 Markdown。'
+    // 新编辑器在前；不再回退 md 编辑器（Markdown 编辑器里粘富文本会乱码）
+    editorUrls: ['https://mp.csdn.net/mp_blog/creation/editor', 'https://editor.csdn.net/?not_checkout=1'],
+    titleSelectors: ['#txtTitle', '.article-title input', '.title-input', '#title', 'input[placeholder*="标题"]', '#articleTitle'],
+    contentSelectors: ['.ql-editor', '.article-content', '.pe-editor', '#ueditor_0', '.edui-body-container', '.ProseMirror', '[contenteditable="true"]', 'textarea'],
+    contentType: 'richtext',
+    titleMax: 100,
+    publishTexts: ['发布文章'],
+    note: 'CSDN 打开富文本编辑器，整篇正文以富文本粘贴，保留排版与图片；点「发布文章」后会在弹窗里二次确认发布。'
   },
   {
     id: 'weibo', name: '微博', region: 'cn', group: '图文', color: '#e6162d', experimental: true,
+    titleMax: 30,
     loginUrl: 'https://weibo.com/',
     loggedInUrl: /weibo\.com\/(u\/|home|mybar)/,
     loginCookies: ['SUB'],
@@ -135,8 +150,9 @@ module.exports = [
     preClickText: ['写文章', '头条文章'],
     titleSelectors: ['input[placeholder*="标题"]', '.title input', '#title'],
     contentSelectors: ['.ProseMirror', '[contenteditable="true"]', 'textarea'],
-    contentType: 'markdown',
-    note: '实验性支持：微博页面变动频繁，失败时自动切手动模式。'
+    contentType: 'richtext',
+   publishTexts: ['发头条文章', '发布'],
+   note: '实验性支持：微博页面变动频繁，失败时自动切手动模式。'
   },
   {
     id: 'sohu', name: '搜狐号', region: 'cn', group: '图文', color: '#dd2c2c', experimental: true,
@@ -236,7 +252,7 @@ module.exports = [
     titleSelectors: ['input[placeholder*="标题"]', '#title', '.title input'],
     contentSelectors: ['[contenteditable="true"]', '.ProseMirror', 'textarea'],
     contentType: 'richtext',
-    note: '实验性支持，失败时自动切手动模式。'
+   note: '实验性支持，失败时自动切手动模式。'
   },
   {
     id: 'chejiahao', name: '车家号', region: 'cn', group: '图文', color: '#ff7900', experimental: true,
@@ -257,8 +273,9 @@ module.exports = [
     editorUrls: ['https://i.cnblogs.com/posts/edit'],
     titleSelectors: ['input[placeholder*="标题"]', '#post-title', '.post-title input'],
     contentSelectors: ['.CodeMirror', '.editor', '[contenteditable="true"]', 'textarea'],
-    contentType: 'markdown',
-    note: '博客园使用 Markdown 编辑器，内容会自动转换。'
+   contentType: 'markdown',
+   publishTexts: ['发布'],
+   note: '博客园使用 Markdown 编辑器，内容会自动转换。'
   },
   {
     id: 'juejin', name: '掘金', region: 'cn', group: '图文', color: '#1e80ff',
@@ -268,8 +285,9 @@ module.exports = [
     editorUrls: ['https://juejin.cn/editor/drafts/new'],
     titleSelectors: ['input[placeholder*="标题"]', '.title-input', 'input[name="title"]'],
     contentSelectors: ['.CodeMirror', '.bytemd', '[contenteditable="true"]', 'textarea'],
-    contentType: 'markdown',
-    note: '掘金使用 Markdown 编辑器，内容会自动转换。'
+   contentType: 'markdown',
+   publishTexts: ['发布'],
+   note: '掘金使用 Markdown 编辑器，内容会自动转换。'
   },
   {
     id: 'segmentfault', name: 'SegmentFault', region: 'cn', group: '图文', color: '#009a61',
@@ -484,7 +502,8 @@ module.exports = [
     titleSelectors: ['h1[contenteditable="true"]', 'input[placeholder*="Title"]', 'textarea[placeholder*="Title"]'],
     contentSelectors: ['[contenteditable="true"]', '.ProseMirror', 'textarea'],
     contentType: 'richtext',
-    note: 'Medium 编辑器支持富文本；失败时自动切手动模式。'
+   publishTexts: ['Publish', '发布'],
+   note: 'Medium 编辑器支持富文本；失败时自动切手动模式。'
   },
   {
     id: 'devto', name: 'Dev.to', region: 'global', group: '图文', color: '#0a0a0a',
@@ -495,7 +514,8 @@ module.exports = [
     titleSelectors: ['textarea[placeholder*="title"]', 'input[placeholder*="title"]', '#article-form-title'],
     contentSelectors: ['textarea#article_body_markdown', '.CodeMirror', 'textarea'],
     contentType: 'markdown',
-    note: 'Dev.to 使用 Markdown 编辑器，内容会自动转换。'
+   publishTexts: ['Publish post', 'Publish'],
+   note: 'Dev.to 使用 Markdown 编辑器，内容会自动转换。'
   },
   {
     id: 'linkedin', name: 'LinkedIn 领英', region: 'global', group: '图文', color: '#0a66c2',
@@ -506,7 +526,8 @@ module.exports = [
     titleSelectors: ['input[placeholder*="Title"]', 'textarea[placeholder*="Title"]', '.share-creation-state__text-editor'],
     contentSelectors: ['.ql-editor', '[contenteditable="true"]', 'textarea'],
     contentType: 'richtext',
-    note: 'LinkedIn 动态/文章编辑器；失败时自动切手动模式。'
+   publishTexts: ['Post', 'Publish', '发布'],
+   note: 'LinkedIn 动态/文章编辑器；失败时自动切手动模式。'
   },
   {
     id: 'reddit', name: 'Reddit', region: 'global', group: '图文', color: '#ff4500', experimental: true,
@@ -517,7 +538,8 @@ module.exports = [
     titleSelectors: ['textarea[placeholder*="Title"]', 'input[placeholder*="Title"]', '#post-title'],
     contentSelectors: ['[contenteditable="true"]', 'textarea', '.ProseMirror'],
     contentType: 'richtext',
-    note: '实验性支持：Reddit 需要选择版块（subreddit），失败时自动切手动模式。'
+   publishTexts: ['Post', 'Publish', '发布'],
+   note: '实验性支持：Reddit 需要选择版块（subreddit），失败时自动切手动模式。'
   },
   {
     id: 'hashnode', name: 'Hashnode', region: 'global', group: '图文', color: '#2962ff', experimental: true,
@@ -527,7 +549,8 @@ module.exports = [
     titleSelectors: ['input[placeholder*="Title"]', 'textarea[placeholder*="Title"]', '#title'],
     contentSelectors: ['[contenteditable="true"]', '.ProseMirror', 'textarea'],
     contentType: 'markdown',
-    note: '实验性支持，失败时自动切手动模式。'
+   publishTexts: ['Publish'],
+   note: '实验性支持，失败时自动切手动模式。'
   },
   {
     id: 'substack', name: 'Substack', region: 'global', group: '图文', color: '#ff6719', experimental: true,
@@ -537,7 +560,8 @@ module.exports = [
     titleSelectors: ['input[placeholder*="Title"]', 'textarea[placeholder*="Title"]', '#title'],
     contentSelectors: ['[contenteditable="true"]', '.ProseMirror', 'textarea'],
     contentType: 'richtext',
-    note: '实验性支持，失败时自动切手动模式。'
+   publishTexts: ['Publish', 'Post'],
+   note: '实验性支持，失败时自动切手动模式。'
   },
   {
     id: 'tumblr', name: 'Tumblr', region: 'global', group: '图文', color: '#36465d', experimental: true,
@@ -547,7 +571,8 @@ module.exports = [
     titleSelectors: ['input[placeholder*="Title"]', '#title'],
     contentSelectors: ['[contenteditable="true"]', '.ProseMirror', 'textarea'],
     contentType: 'richtext',
-    note: '实验性支持，失败时自动切手动模式。'
+   publishTexts: ['Post', 'Publish'],
+   note: '实验性支持，失败时自动切手动模式。'
   },
   {
     id: 'pinterest', name: 'Pinterest', region: 'global', group: '图文', color: '#e60023', experimental: true,
@@ -570,7 +595,8 @@ module.exports = [
     titleSelectors: ['[data-testid="tweetTextarea_0"]', 'div[contenteditable="true"]'],
     contentSelectors: ['div[contenteditable="true"]', '[data-testid="tweetTextarea_0"]'],
     contentType: 'richtext',
-    note: '实验性支持：X 的编辑框是富文本，失败时自动切手动模式。'
+   publishTexts: ['发布', 'Post'],
+   note: '实验性支持：X 的编辑框是富文本，失败时自动切手动模式。'
   },
   {
     id: 'facebook', name: 'Facebook', region: 'global', group: '图文', color: '#1877f2', experimental: true,
@@ -583,6 +609,7 @@ module.exports = [
     titleSelectors: ['input[placeholder*="Title"]', 'textarea[placeholder*="Title"]'],
     contentSelectors: ['[contenteditable="true"]', '.ProseMirror', 'textarea'],
     contentType: 'richtext',
+   publishTexts: ['发布', 'Post'],
     note: '实验性支持，失败时自动切手动模式。'
   },
 

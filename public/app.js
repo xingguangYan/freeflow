@@ -105,6 +105,7 @@ function switchView(view, title) {
   if (view === 'publish') { renderPublish(); startTaskPoll(); }
   if (view === 'logs') loadLogs();
   if (view === 'stats') loadStats();
+  if (view === 'llm') loadLlm();
 }
 $('#nav').addEventListener('click', e => {
   const b = e.target.closest('.nav-item'); if (!b) return;
@@ -194,7 +195,26 @@ $('#btnNewArticle').onclick = async () => {
   S.articles.push(a); renderArticleList(); await selectArticle(a.id); updateTopStats(); toast('已新建文章');
 };
 async function saveCurrent(notify = true) {
-  if (!S.current) return;
+  // 没有选中任何文章时，编辑器里的内容直接保存为新草稿，并自动选中它
+  if (!S.current) {
+    const mode = ($('#view-articles input[name="artMode"]:checked') || {}).value || 'richtext';
+    const title = $('#artTitle').value.trim();
+    const content = mode === 'markdown' ? $('#artMd').value : $('#artContent').innerHTML;
+    const plain = (mode === 'markdown' ? $('#artMd').value : (($('#artContent').innerText) || '')).trim();
+    if (!title && !plain) return toast('内容为空，先写标题或正文再保存');
+    try {
+      const body = { type: 'article', mode, title: title || '未命名', content, cover: null, tags: '', videoFile: null, videoPath: null, audioFile: null, audioPath: null };
+      const a = await api('/api/articles', { method: 'POST', body: JSON.stringify(body) });
+      S.articles.push(a);
+      S.current = a;
+      $('#editorTitle').textContent = a.title;
+      renderArticleList();
+      renderPubArticleSelect();
+      updateTopStats();
+      if (notify) toast('已保存为新文章');
+    } catch (e) { toast('保存失败：' + e.message); }
+    return;
+  }
   const type = ($('#view-articles input[name="artType"]:checked') || {}).value || 'article';
   const mode = ($('#view-articles input[name="artMode"]:checked') || {}).value || 'richtext';
   const content = mode === 'markdown' ? $('#artMd').value : $('#artContent').innerHTML;
@@ -619,7 +639,8 @@ function renderPubAccounts() {
         <span class="who"><span class="n">${esc(a.name)}</span> ${accStatusPill(a)}</span>
       </label>`).join('');
   }).join('');
-  el.innerHTML = html || `<span class="muted">${need === 'video' ? '没有可发视频的账号：先去「账号」页添加抖音 / 快手 / B站视频等' : need === 'audio' ? '没有可发音频的账号：目前仅小红书支持音频笔记，先去「账号」页添加' : '先去「账号」页添加并登录账号'}</span>`;
+    const btnAll = $('#btnPubAll'); if (btnAll) btnAll.textContent = '全选';
+el.innerHTML = html || `<span class="muted">${need === 'video' ? '没有可发视频的账号：先去「账号」页添加抖音 / 快手 / B站视频等' : need === 'audio' ? '没有可发音频的账号：目前仅小红书支持音频笔记，先去「账号」页添加' : '先去「账号」页添加并登录账号'}</span>`;
   el.querySelectorAll('input[data-maybe]').forEach(cb => cb.addEventListener('change', () => {
     cb.closest('.pub-acc').style.background = cb.checked ? '#fff8e6' : '';
   }));
@@ -630,18 +651,89 @@ function updatePubModeHint(art) {
   const md = art.mode === 'markdown';
   el.innerHTML = `当前文章 <span class="mode-chip ${md ? 'md' : 'rt'}">${md ? 'Markdown' : '富文本'}</span>，发布时按平台模式自动转换（Markdown ⇄ 富文本），不会乱发。`;
 }
-$('#pubArticle').addEventListener('change', renderPubAccounts);
+$('#btnPubAll').onclick = () => {
+  const boxes = [...document.querySelectorAll('#pubAccounts input[type="checkbox"]')];
+  if (!boxes.length) return toast('没有可选的账号，先去「账号」页添加');
+  const allOn = boxes.length > 0 && boxes.every(b => b.checked);
+  boxes.forEach(b => {
+    b.checked = !allOn;
+    const row = b.closest('.pub-acc');
+    if (row) row.style.background = (b.checked && b.dataset.maybe) ? '#fff8e6' : '';
+  });
+  $('#btnPubAll').textContent = allOn ? '全选' : '清空';
+  toast(allOn ? '已取消全部勾选' : '已全选 ' + boxes.length + ' 个账号');
+};
+$('#pubArticle').addEventListener('change', renderPubAccounts);// 一键检测勾选账号的登录态（没勾选则检测全部），逐个打开浏览器读 cookie
+$('#btnCheckAllLogin').onclick = async () => {
+  const checked = $$('#pubAccounts input:checked').map(i => i.value);
+  const ids = checked.length ? checked : S.accounts.map(a => a.id);
+  if (!ids.length) return toast('没有可检测的账号，先去「账号」页添加');
+  const btn = $('#btnCheckAllLogin'); btn.disabled = true; btn.textContent = '检测中…';
+  try {
+    const r = await api('/api/accounts/check-all', { method: 'POST', body: JSON.stringify({ accountIds: ids }) });
+    const entries = Object.entries(r.results || {});
+    const okN = entries.filter(([, v]) => v && v.loggedIn).length;
+    await loadAccounts(); renderPubAccounts();
+    toast('登录检测完成：' + okN + '/' + entries.length + ' 个账号已登录' + (okN < entries.length ? '，未登录的请点「登录」扫码' : ''));
+  } catch (e) { toast('批量检测失败: ' + e.message); }
+  finally { btn.disabled = false; btn.textContent = '一键检测登录'; }
+};
 function renderPublish() { renderPubArticleSelect(); renderPubAccounts(); renderTasks(); }
-$('#btnPublish').onclick = async () => {
+// 发布前先弹预览，确认平台/账号/内容后再创建任务
+let pendingPublish = null;
+let pendingPublishScheduled = false;
+function openPublishPreview(articleId, accountIds, scheduled) {
+  pendingPublishScheduled = !!scheduled;
+  const art = S.articles.find(a => a.id === articleId);
+  const mode = (art && art.mode) || 'richtext';
+  const html = mode === 'markdown' ? mdToHtmlLocal((art && art.content) || '') : ((art && art.content) || '');
+  // 手机端素材地址补全（桌面端 API 前缀为空，不影响）
+  const body = html.replace(/src="\/\//g, 'src="' + (window.__apiBase || '') + '/');
+  const text = ((art && art.content) || '').replace(/<[^>]+>/g, '');
+  const when = pendingPublishScheduled ? '定时 ' + ($('#pubSchedule').value || '').replace('T', ' ') : '立即发布';
+  $('#previewBody').innerHTML =
+    '<h2 class="pv-title">' + esc((art && art.title) || '(未命名)') + '</h2>' +
+    '<div class="pv-meta">' + (mode === 'markdown' ? 'Markdown' : '富文本') + ' · 约 ' + text.replace(/\s/g, '').length + ' 字 · ' + when + '</div>' +
+    '<div class="pv-content">' + body + '</div>';
+  const targets = accountIds.map(id => {
+    const a = S.accounts.find(x => x.id === id);
+    return platName(a && a.platformId) + ':' + (a ? a.name : id);
+  });
+  $('#previewTargets').textContent = '将发布到 ' + targets.length + ' 个账号：' + targets.join('、');
+  $('#previewModal').style.display = 'flex';
+}
+// 发布拆成「立即发布 / 定时发布」两个入口，定时必须选有效时间
+$('#btnPublishNow').onclick = () => requestPublish(false);
+$('#btnPublishScheduled').onclick = () => requestPublish(true);
+function requestPublish(scheduled) {
   const articleId = $('#pubArticle').value;
   const accountIds = $$('#pubAccounts input:checked').map(i => i.value);
   if (!articleId) return toast('请先写一篇文章');
   if (!accountIds.length) return toast('至少勾选一个账号');
-  const scheduledAt = $('#pubSchedule').value || null;
-  await api('/api/tasks', { method: 'POST', body: JSON.stringify({ articleId, accountIds, scheduledAt }) });
-  $('#pubSchedule').value = '';
-  toast(scheduledAt ? '已加入定时队列' : '开始分发，浏览器会逐个打开平台编辑页');
-  renderTasks(); startTaskPoll();
+  if (!S.articles.some(a => a.id === articleId)) return toast('文章不存在，请重新选择');
+  if (scheduled) {
+    const v = $('#pubSchedule').value;
+    if (!v) return toast('请先选择定时发布的时间');
+    if (new Date(v).getTime() <= Date.now()) return toast('定时时间必须晚于当前时间');
+  }
+  openPublishPreview(articleId, accountIds, scheduled);
+}
+function closePublishPreview() { $('#previewModal').style.display = 'none'; pendingPublish = null; pendingPublishScheduled = false; }
+$('#previewCancel').onclick = closePublishPreview;
+$('#previewModal').addEventListener('click', e => { if (e.target.id === 'previewModal') closePublishPreview(); });
+$('#previewConfirm').onclick = async () => {
+  if (!confirm('确认发布到以上账号？')) return;
+  const articleId = $('#pubArticle').value;
+  const accountIds = $$('#pubAccounts input:checked').map(i => i.value);
+  if (!articleId || !accountIds.length) { closePublishPreview(); return toast('请重新选择文章与账号'); }
+  const scheduledAt = pendingPublishScheduled ? ($('#pubSchedule').value || null) : null;
+  closePublishPreview();
+  try {
+    await api('/api/tasks', { method: 'POST', body: JSON.stringify({ articleId, accountIds, scheduledAt }) });
+    $('#pubSchedule').value = '';
+    toast(scheduledAt ? '已加入定时队列' : '开始分发，浏览器会逐个打开平台编辑页');
+    renderTasks(); startTaskPoll();
+  } catch (e) { toast('创建发布任务失败：' + e.message); }
 };
 async function renderTasks() {
   const tasks = await api('/api/tasks');
@@ -683,6 +775,223 @@ function startTaskPoll() {
   }, 4000);
 }
 $('#btnRefreshTasks').onclick = renderTasks;
+// ---------- 我的大模型（厂商预设 + 自定义端点 + 本地素材） ----------
+let SLLM = { models: [], materials: [], editing: null, selectedModel: '', providers: [] };
+async function loadLlm() {
+  const r = await api('/api/llm');
+  SLLM.models = r.models || []; SLLM.materials = r.materials || [];
+  try { SLLM.providers = (await api('/api/llm/providers')).providers || []; fillLlmProviderOptions(); } catch { /* providers 可选 */ }
+  const enabled = SLLM.models.filter(m => m.enabled);
+  if (!SLLM.selectedModel || !SLLM.models.some(m => m.id === SLLM.selectedModel)) SLLM.selectedModel = (enabled[0] || SLLM.models[0] || {}).id || '';
+  renderLlmModels(); renderLlmMaterials();
+  $('#btnLlmGenerate').disabled = !SLLM.selectedModel;
+}
+function fillLlmProviderOptions() {
+  const sel = $('#llmProvider'); if (!sel) return;
+  sel.innerHTML = '<option value="">自定义（手填地址）</option>' + SLLM.providers.map(p =>
+    `<option value="${esc(p.id)}">${esc(p.name)}${p.tag ? '（' + esc(p.tag) + '）' : ''}</option>`).join('');
+}
+// 选厂商 → 自动填好端点、常用模型、备注
+function applyLlmProvider(id) {
+  const p = SLLM.providers.find(x => x.id === id);
+  const note = $('#llmProviderNote'); if (note) note.textContent = p ? (p.note || '') : '';
+  const preset = $('#llmModelPreset');
+  if (preset) {
+    preset.innerHTML = '<option value="">— 常用模型 —</option>' + (p && p.models || []).map(m => `<option>${esc(m)}</option>`).join('');
+    preset.disabled = !(p && p.models && p.models.length);
+  }
+  if (!p) return;
+  $('#llmEndpoint').value = p.endpoint;
+  const manual = $('#llmModelInput'); if (manual && !manual.value) manual.value = p.defaultModel || '';
+  const keyRow = $('#llmKey'); if (keyRow) keyRow.placeholder = p.keyHint || '本地服务可留空';
+}
+function renderLlmModels() {
+  const el = $('#llmModelList'); if (!el) return;
+  if (!SLLM.models.length) { el.innerHTML = '<div class="empty">还没有导入模型<br>点右上「+ 新增模型」，选厂商或手填服务地址</div>'; return; }
+  const cur = SLLM.selectedModel;
+  el.innerHTML = SLLM.models.map(m => {
+    const pName = (SLLM.providers.find(p => p.id === m.provider) || {}).name || '自定义';
+    return `
+    <div class="task" style="margin:8px 0">
+      <div class="head"><strong>${esc(m.name)}</strong>
+        <span class="pill ${m.enabled ? 'ok' : 'gray'}">${m.enabled ? '启用中' : '已停用'}</span>
+        <span class="muted">${esc(m.endpoint)}</span>
+        <span class="task-ops">
+          <button class="btn small ${m.id === cur ? 'primary' : ''}" data-llmgen="${m.id}" ${m.enabled ? '' : 'disabled'}>用这个</button>
+          <button class="btn small" data-llmtoggle="${m.id}">${m.enabled ? '停用' : '启用'}</button>
+          <button class="btn small" data-llmedit="${m.id}">编辑</button>
+          <button class="btn small danger" data-llmdel="${m.id}">删除</button>
+        </span></div>
+      <div class="muted" style="padding:2px 0">${esc(pName)} · 模型：${esc(m.model || '（未填）')} · Key：${esc(m.maskedKey || m.apiKey || '（免密）')} · ${esc(m.temperature == null ? 0.7 : m.temperature)} / ${esc(m.maxTokens || 3000)} tokens</div>
+    </div>`;
+  }).join('');
+  $$('#llmModelList [data-llmgen]').forEach(b => b.onclick = () => {
+    SLLM.selectedModel = b.dataset.llmgen;
+    $$('#llmModelList [data-llmgen]').forEach(x => x.classList.toggle('primary', x.dataset.llmgen === SLLM.selectedModel));
+    $('#btnLlmGenerate').disabled = false;
+    toast('已选为本次生成模型');
+  });
+  $$('#llmModelList [data-llmtoggle]').forEach(b => b.onclick = async () => {
+    const m = SLLM.models.find(x => x.id === b.dataset.llmtoggle);
+    await api('/api/llm/models/' + m.id, { method: 'PUT', body: JSON.stringify({ enabled: !m.enabled }) });
+    loadLlm();
+  });
+  $$('#llmModelList [data-llmedit]').forEach(b => b.onclick = () => fillLlmForm(SLLM.models.find(x => x.id === b.dataset.llmedit)));
+  $$('#llmModelList [data-llmdel]').forEach(b => b.onclick = async () => {
+    if (!confirm('删除这个模型配置？')) return;
+    await api('/api/llm/models/' + b.dataset.llmdel, { method: 'DELETE' });
+    loadLlm();
+  });
+}
+function fillLlmForm(m) {
+  SLLM.editing = m ? m.id : null;
+  $('#llmForm').style.display = 'block';
+  $('#llmName').value = m ? m.name : '';
+  $('#llmProvider').value = m && m.provider ? m.provider : '';
+  applyLlmProvider($('#llmProvider').value);
+  $('#llmEndpoint').value = m ? m.endpoint : (SLLM.providers[0] ? SLLM.providers[0].endpoint : '');
+  if (m) { $('#llmEndpoint').value = m.endpoint; }
+  $('#llmKey').value = ''; // 编辑时不回填明文 Key；留空 = 沿用原 Key
+  $('#llmKeyHint').textContent = m && m.hasKey ? '已保存（留空保持不变）' : '';
+  $('#llmModelInput').value = m ? m.model : '';
+  $('#llmTemperature').value = m && m.temperature != null ? m.temperature : 0.7;
+  $('#llmMaxTokens').value = m && m.maxTokens ? m.maxTokens : 3000;
+  $('#llmSystemPrompt').value = m && m.systemPrompt ? m.systemPrompt : '';
+  $('#llmTestResult').textContent = '';
+  $('#llmModelFetched').innerHTML = '';
+}
+function pickLlmModel() { return ($('#llmModelInput').value || '').trim(); }
+$('#btnLlmAdd').onclick = () => fillLlmForm(null);
+$('#btnLlmCancel').onclick = () => { $('#llmForm').style.display = 'none'; SLLM.editing = null; };
+$('#llmProvider').onchange = () => applyLlmProvider($('#llmProvider').value);
+$('#llmModelPreset').onchange = () => { if ($('#llmModelPreset').value) $('#llmModelInput').value = $('#llmModelPreset').value; };
+$('#btnLlmSave').onclick = async () => {
+  const body = {
+    name: $('#llmName').value.trim(),
+    provider: $('#llmProvider').value || '',
+    endpoint: $('#llmEndpoint').value.trim(),
+    apiKey: $('#llmKey').value,
+    model: pickLlmModel(),
+    temperature: parseFloat($('#llmTemperature').value),
+    maxTokens: parseInt($('#llmMaxTokens').value, 10),
+    systemPrompt: $('#llmSystemPrompt').value,
+    enabled: true
+  };
+  if (!body.name) return toast('请填写配置名称');
+  if (!body.endpoint) return toast('请填写服务地址');
+  if (isNaN(body.temperature)) body.temperature = 0.7;
+  if (isNaN(body.maxTokens) || body.maxTokens < 1) body.maxTokens = 3000;
+  if (SLLM.editing) await api('/api/llm/models/' + SLLM.editing, { method: 'PUT', body: JSON.stringify(body) });
+  else { const m = await api('/api/llm/models', { method: 'POST', body: JSON.stringify(body) }); SLLM.selectedModel = m.id || SLLM.selectedModel; }
+  $('#llmForm').style.display = 'none'; SLLM.editing = null;
+  toast('模型配置已保存'); loadLlm();
+};
+$('#btnLlmTest').onclick = async () => {
+  const body = { endpoint: $('#llmEndpoint').value.trim(), apiKey: $('#llmKey').value, model: pickLlmModel() };
+  if (!body.endpoint) return toast('请填写服务地址');
+  if (!body.apiKey && SLLM.editing) { body.modelId = SLLM.editing; }
+  $('#llmTestResult').textContent = '测试中…';
+  try {
+    const r = await api('/api/llm/models/test', { method: 'POST', body: JSON.stringify(body) });
+    $('#llmTestResult').textContent = r.ok ? '✓ 连通成功（' + r.latencyMs + 'ms，回复：' + (r.reply || '') + '）' : '✗ ' + r.error;
+  } catch (e) { $('#llmTestResult').textContent = '✗ ' + e.message; }
+};
+$('#btnLlmFetch').onclick = async () => {
+  const id = SLLM.editing;
+  const box = $('#llmModelFetched');
+  if (!id) {
+    // 未保存时用当前表单内容试拉
+    const r = await api('/api/llm/models/list-anonymous', { method: 'POST', body: JSON.stringify({ endpoint: $('#llmEndpoint').value.trim(), apiKey: $('#llmKey').value }) });
+    if (!r.ok) return toast('拉取失败：' + r.error);
+    renderFetchedModels(r.models, box); return;
+  }
+  const r = await api('/api/llm/models/' + id + '/list-models', { method: 'POST' });
+  if (!r.ok) return toast('拉取失败：' + r.error);
+  renderFetchedModels(r.models, box);
+};
+function renderFetchedModels(models, box) {
+  if (!box) return;
+  if (!models.length) { box.innerHTML = '<span class="muted">服务端没有返回模型列表</span>'; return; }
+  box.innerHTML = '<span class="muted">点选填入：</span> ' + models.slice(0, 60).map(id =>
+    `<option>${esc(id)}</option>`).join('');
+  const sel = document.createElement('select');
+  sel.style.maxWidth = '260px';
+  sel.innerHTML = '<option value="">— 拉到的模型（' + models.length + ' 个，显示前 60）—</option>' + models.slice(0, 60).map(id => `<option>${esc(id)}</option>`).join('');
+  sel.onchange = () => { if (sel.value) $('#llmModelInput').value = sel.value; };
+  box.innerHTML = ''; box.appendChild(sel);
+  toast('已拉取 ' + models.length + ' 个可用模型');
+}
+// 本地素材：前端读取文件文本再上传，不自动扫描磁盘
+function bindLlmDrop() {
+  const zone = $('#llmDropZone'), input = $('#llmFileInput');
+  if (!zone || !input) return;
+  zone.onclick = () => input.click();
+  input.onchange = () => {
+    const f = input.files[0]; if (!f) return;
+    zone.textContent = '正在读取 ' + f.name + ' …';
+    const rd = new FileReader();
+    rd.onload = async () => {
+      try {
+        const m = await api('/api/llm/materials', { method: 'POST', body: JSON.stringify({ name: f.name, text: rd.result }) });
+        toast('素材已读取：' + m.name + '（' + m.size + ' 字符）'); loadLlm();
+      } catch (e) { toast('素材读取失败: ' + e.message); }
+      zone.textContent = '点击选择本地 txt / md / json / csv 文本文件'; input.value = '';
+    };
+    rd.onerror = () => { toast('文件读取失败'); zone.textContent = '点击选择本地 txt / md / json / csv 文本文件'; };
+    rd.readAsText(f, 'utf-8');
+  };
+}
+function renderLlmMaterials() {
+  const el = $('#llmMaterialList'); if (!el) return;
+  if (!SLLM.materials.length) { el.innerHTML = '<span class="muted">还没有素材。选择本地文本文件作为创作上下文。</span>'; return; }
+  el.innerHTML = SLLM.materials.map(m => `
+    <label class="pub-acc" style="display:inline-flex;margin:3px 6px 3px 0;cursor:pointer">
+      <input type="checkbox" value="${m.id}" data-llmmat checked>
+      <span class="who"><span class="n">${esc(m.name)}</span> <span class="muted">${m.size} 字符</span></span>
+      <button class="btn small danger" data-llmmatdel="${m.id}" style="margin-left:6px">删</button>
+    </label>`).join('');
+  $$('#llmMaterialList [data-llmmatdel]').forEach(b => b.onclick = async e => {
+    e.preventDefault();
+    if (!confirm('删掉这个素材？删掉后不再参与生成。')) return;
+    await api('/api/llm/materials/' + b.dataset.llmmatdel, { method: 'DELETE' });
+    loadLlm();
+  });
+}
+$('#btnLlmGenerate').onclick = async () => {
+  if (!SLLM.selectedModel) return toast('请先选择（或新增）一个模型');
+  const prompt = $('#llmPrompt').value.trim();
+  if (!prompt) return toast('请填写写作主题/要求');
+  const matIds = $$('#llmMaterialList [data-llmmat]:checked').map(i => i.value);
+  const btn = $('#btnLlmGenerate'); btn.disabled = true; btn.textContent = '生成中…（最长两分钟）';
+  try {
+    const r = await api('/api/llm/generate', { method: 'POST', body: JSON.stringify({ modelId: SLLM.selectedModel, prompt, materialIds: matIds }) });
+    renderLlmResult(r);
+    toast('生成完成，预览后可保存到草稿箱');
+  } catch (e) { toast('生成失败: ' + e.message); }
+  finally { btn.disabled = !SLLM.selectedModel; btn.textContent = '用选中模型生成文章'; }
+};
+function renderLlmResult(r) {
+  const el = $('#llmResult'); if (!el) return;
+  el.innerHTML = `
+    <div class="task">
+      <div class="head"><strong>生成结果</strong><span class="muted">${esc(r.model || '')}</span>
+        <span class="task-ops"><button class="btn small primary" id="llmToDraft">保存到草稿箱</button>
+        <button class="btn small" id="llmToPublish">去发布</button></span></div>
+      <div style="padding:8px 0"><input id="llmGenTitle" value="${esc(r.title)}" style="width:100%;padding:6px;box-sizing:border-box"></div>
+      <div><textarea id="llmGenContent" rows="10" style="width:100%;padding:8px;box-sizing:border-box;font-family:inherit">${esc(r.content)}</textarea></div>
+    </div>`;
+  const save = async () => api('/api/llm/to-draft', { method: 'POST', body: JSON.stringify({ title: $('#llmGenTitle').value, content: $('#llmGenContent').value }) });
+  $('#llmToDraft').onclick = async () => { const art = await save(); await loadArticles(); toast('已保存到草稿箱：' + art.title); };
+  $('#llmToPublish').onclick = async () => {
+    const art = await save(); await loadArticles();
+    switchView('publish', '一键发布');
+    $('#pubArticle').value = art.id;
+    renderPubAccounts();
+    toast('已存为草稿并跳到发布页，请确认平台和账号');
+  };
+}
+bindLlmDrop();
+
 $('#btnClearTasks').onclick = async () => {
   if (!confirm('清空所有历史任务记录？（正在运行的任务会保留）')) return;
   await api('/api/tasks', { method: 'DELETE' });
@@ -901,3 +1210,20 @@ $('#btnConnSave').onclick = () => {
     toast('启动失败: ' + e.message + (API ? '，请检查电脑端是否已启动' : ''));
   }
 })();
+// ---- Electron 退出确认：主进程关闭窗口前先问一次，取消就不退出 ----
+let exitPending = false;
+if (window.freeflow && typeof window.freeflow.onAskExit === 'function') {
+  window.freeflow.onAskExit(() => {
+    if (exitPending) return; // 重复点关闭 / 快捷键不再弹第二个窗
+    exitPending = true;
+    $('#exitModal').style.display = 'flex';
+  });
+  const replyExit = ok => {
+    exitPending = false;
+    $('#exitModal').style.display = 'none';
+    window.freeflow.exitReply(ok);
+  };
+  $('#exitConfirm').onclick = () => replyExit(true);
+  $('#exitCancel').onclick = () => replyExit(false);
+  $('#exitModal').addEventListener('click', e => { if (e.target.id === 'exitModal') replyExit(false); });
+}

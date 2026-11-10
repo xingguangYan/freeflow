@@ -245,28 +245,41 @@ function mdToHtml(md) {
 }
 
 // ---------- 填充 ----------
-async function pickVisible(page, selectors) {
+async function pickVisible(page, selectors, skip) {
   for (const s of selectors) {
     try {
-      const loc = page.locator(s).first();
-      if (await loc.count() > 0 && await loc.isVisible().catch(() => false)) return loc;
+      const locs = page.locator(s);
+      const n = await locs.count();
+      for (let i = 0; i < n; i++) {
+        const loc = locs.nth(i);
+        if (!(await loc.isVisible().catch(() => false))) continue;
+        if (skip && await skip(loc)) continue;
+        return loc;
+      }
     } catch { /* 继续候选 */ }
   }
   return null;
 }
 // 在主文档和所有 iframe 里找可见元素（公众号编辑器在 iframe 里）。
-async function pickVisibleIn(page, selectors) {
+async function pickVisibleIn(page, selectors, skip) {
   const scopes = [page];
   try {
     for (const f of page.frames()) if (f !== page.mainFrame()) scopes.push(f);
   } catch { /* */ }
   for (const scope of scopes) {
     try {
-      const loc = await pickVisible(scope, selectors);
+      const loc = await pickVisible(scope, selectors, skip);
       if (loc) return { scope, loc };
     } catch { /* 跨域 iframe 可能读不到 */ }
   }
   return null;
+}
+// 百家号等平台的标题本身是 contenteditable，通用正文选择器会先误中标题；命中标题元素时跳过
+async function isTitleEl(loc) {
+  try {
+    const sig = await loc.evaluate(el => [el.id, String(el.className), el.getAttribute('placeholder') || '', el.getAttribute('aria-label') || ''].join(' '));
+    return /标题|题目|title/i.test(sig);
+  } catch { return false; }
 }
 // 等编辑器真正渲染出来，再开始填。返回 {title, content} 或 null。
 async function waitForEditor(page, platform, timeoutMs = 25000) {
@@ -305,6 +318,10 @@ const GENERIC_CONTENT = [
 ];
 
 async function fillTitle(page, platform, title) {
+  // 平台标题长度限制：超长标题截断，避免被平台静默截断或填充失败
+  const max = platform.titleMax || 0;
+  let t = String(title || '');
+  if (max && t.length > max) t = t.slice(0, Math.max(1, max - 1)) + '…';
   const hit = await pickVisibleIn(page, [...(platform.titleSelectors || []), ...GENERIC_TITLE]);
   if (!hit) {
     // 有的平台标题框是隐藏的真实输入框（如 CSDN），直接写值
@@ -316,7 +333,7 @@ async function fillTitle(page, platform, title) {
             el.value = v;
             el.dispatchEvent(new Event('input', { bubbles: true }));
             el.dispatchEvent(new Event('change', { bubbles: true }));
-          }, title);
+          }, t);
           return true;
         }
       } catch { /* 继续 */ }
@@ -327,11 +344,11 @@ async function fillTitle(page, platform, title) {
   const tag = await loc.evaluate(el => el.tagName).catch(() => 'INPUT');
   if (tag === 'TEXTAREA' || tag === 'INPUT') {
     await loc.click({ timeout: 3000 }).catch(() => {});
-    await loc.fill(title, { timeout: 5000 }).catch(async () => {
-      await loc.evaluate((el, v) => { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); }, title);
+    await loc.fill(t, { timeout: 5000 }).catch(async () => {
+      await loc.evaluate((el, v) => { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); }, t);
     });
   } else {
-    await loc.evaluate((el, v) => { el.textContent = v; el.dispatchEvent(new Event('input', { bubbles: true })); }, title);
+    await loc.evaluate((el, v) => { el.textContent = v; el.dispatchEvent(new Event('input', { bubbles: true })); }, t);
   }
   return true;
 }
@@ -340,23 +357,32 @@ async function fillContent(page, platform, html) {
   const isMd = platform.contentType === 'markdown';
   const payload = isMd ? htmlToMd(html) : html;
   const probe = htmlToText(payload).replace(/\s+/g, '');
+  if (!probe) return false;
+  const head = probe.slice(0, 30), tail = probe.slice(-20);
+  // 富文本平台若是 UEditor（CSDN / 公众号），先走官方实例 API，比模拟粘贴可靠得多
+  if (!isMd && await ueFill(page, payload, head, tail, probe.length)) return true;
   const candidates = [...(platform.contentSelectors || []), ...GENERIC_CONTENT];
-  const hit = await pickVisibleIn(page, candidates);
+  // 百家号等平台的标题也是可编辑区，通用选择器会先匹配到标题 → 正文候选里排除标题元素
+  const hit = await pickVisibleIn(page, candidates, isTitleEl);
   if (!hit) return false;
   const { loc } = hit;
   // 草稿保护：编辑器里已有无关内容时不覆盖，交给手动模式
   const before = await loc.evaluate(el => (el.innerText || el.value || '').trim()).catch(() => '');
   const beforeNorm = before.replace(/\s+/g, '');
-  if (beforeNorm.length > 20 && probe && !beforeNorm.includes(probe)) return false;
+  if (beforeNorm.length > 10 && !beforeNorm.includes(head)) return false;
   const tag = await loc.evaluate(el => el.tagName).catch(() => 'DIV');
-  // 校验：取归一化文本的前 20 字符是否落进编辑器
+  // 校验：正文的开头与结尾都要落进编辑器，且长度不能被平台吞掉一半以上
   const present = async () => {
     const cur = await loc.evaluate(el => (el.innerText || el.value || '').replace(/\s+/g, '')).catch(() => '');
-    return probe.length > 0 && cur.includes(probe.slice(failure_tolerant ? 0 : 0, 20));
+    if (!cur) return false;
+    if (head && !cur.includes(head)) return false;
+    if (tail && !cur.includes(tail)) return false;
+    return cur.length >= probe.length * 0.55;
   };
-  let failure_tolerant = false;
   let ok = false;
   if (tag === 'TEXTAREA' || tag === 'INPUT') {
+    // 纯文本输入框（如小红书正文）不能塞 HTML 源码，富文本要转成纯文本再写入
+    const tp = isMd ? payload : htmlToText(html);
     // 策略1：原生 setter 赋值（React/Vue 受控组件也认）
     await loc.evaluate((el, v) => {
       const proto = Object.getPrototypeOf(el);
@@ -364,18 +390,28 @@ async function fillContent(page, platform, html) {
       if (setter) setter.call(el, v);
       el.dispatchEvent(new Event('input', { bubbles: true }));
       el.dispatchEvent(new Event('change', { bubbles: true }));
-    }, payload);
+    }, tp);
     ok = await present();
     if (!ok) {
       // 策略2：聚焦后键盘整体替换（CodeMirror6 / 手写编辑器认这条）
       await loc.click({ timeout: 3000 }).catch(() => {});
       await page.keyboard.press(KMOD + '+A').catch(() => {});
       await page.keyboard.press('Delete').catch(() => {});
-      await page.keyboard.insertText(payload).catch(() => {});
+      await page.keyboard.insertText(tp).catch(() => {});
+      ok = await present();
+    }
+    if (!ok) {
+      // 策略3：execCommand 插入（部分自研编辑器只认原生输入事件）
+      await loc.evaluate((el, v) => {
+        el.focus();
+        el.value = '';
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        document.execCommand('insertText', false, v);
+      }, tp).catch(() => {});
       ok = await present();
     }
   } else {
-    await loc.evaluate(el => el.focus());
+    await loc.evaluate(el => el.focus()).catch(() => {});
     await page.keyboard.press(KMOD + '+A').catch(() => {});
     await page.keyboard.press('Delete').catch(() => {});
     await page.waitForTimeout(150);
@@ -383,25 +419,25 @@ async function fillContent(page, platform, html) {
       await page.keyboard.insertText(payload).catch(() => {});
       ok = await present();
     } else {
-      // 策略1：富文本粘贴（保留格式）
-      let pasted = false;
+      // 策略1：剪贴板富文本粘贴（保留格式）
       if (await pasteHtml(page, payload)) {
         await page.keyboard.press(KMOD + '+V').catch(() => {});
-        pasted = true;
         await page.waitForTimeout(800);
+        ok = await present();
       }
-      const len = await loc.evaluate(el => (el.innerText || '').trim().length).catch(() => 0);
-      if (!pasted || !len) {
+      // 策略2：execCommand 直接插 HTML（Quill / UEditor 内框都认）
+      if (!ok) {
         await loc.evaluate((el, h) => {
           el.focus();
           document.execCommand('selectAll', false);
           document.execCommand('delete', false);
           document.execCommand('insertHTML', false, h);
-        }, payload);
+        }, payload).catch(() => {});
+        await page.waitForTimeout(300);
+        ok = await present();
       }
-      ok = await present();
       if (!ok) {
-        // 策略2：编辑器拒收 HTML 时退化为插入纯文本
+        // 策略3：编辑器拒收 HTML 时退化为插入纯文本
         await page.keyboard.press(KMOD + '+A').catch(() => {});
         await page.keyboard.press('Delete').catch(() => {});
         await page.keyboard.insertText(htmlToText(payload)).catch(() => {});
@@ -410,6 +446,82 @@ async function fillContent(page, platform, html) {
     }
   }
   return ok;
+}
+
+// UEditor（CSDN 富文本、公众号）用实例 API 写正文并立即回读校验
+async function ueFill(page, html, head, tail, probeLen) {
+  try {
+    return !!await page.evaluate((p) => {
+      const U = window.UE;
+      if (!U || typeof U.getEditor !== 'function') return false;
+      let inst = null;
+      try {
+        const eds = U.getEditors ? U.getEditors() : null;
+        if (eds) { const k = Object.keys(eds); if (k.length) inst = eds[k[0]]; }
+      } catch { /* */ }
+      if (!inst) { try { inst = U.getEditor('ueditor_0'); } catch { /* */ } }
+      if (!inst || typeof inst.setContent !== 'function') return false;
+      inst.setContent(p.html);
+      const txt = String(inst.getContentTxt ? inst.getContentTxt() : '').replace(/\s+/g, '');
+      if (p.head && !txt.includes(p.head)) return false;
+      if (p.tail && !txt.includes(p.tail)) return false;
+      return txt.length >= p.len * 0.5;
+    }, { html, head, tail, len: probeLen });
+  } catch { return false; }
+}
+
+// 发布结果等待：「发布中」就继续等，出现成功提示或跳转到后台页视为成功
+async function waitForPublishSuccess(page, startUrl, timeoutMs = 20000) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    if (page.isClosed && page.isClosed()) return { ok: false, how: 'closed' };
+    let txt = '';
+    try { txt = await page.evaluate(() => ((document.body && document.body.innerText) || '').slice(0, 4000)); } catch { /* 跨域瞬时失败，重试 */ }
+    if (/发布中|正在发布|提交中|上传中/.test(txt)) { await page.waitForTimeout(800).catch(() => {}); continue; }
+    if (/发布成功|已发布|发布完成|提交成功|投稿成功/.test(txt)) return { ok: true, how: 'success' };
+    const url = page.url();
+    if (url !== startUrl && /success|published|manage|list|detail|article|content|draft|\/p\/|\/post\//.test(url)) return { ok: true, how: 'jump' };
+    await page.waitForTimeout(800).catch(() => {});
+  }
+  return { ok: false, how: 'timeout' };
+}
+
+// 发布前排版检查：富文本平台里不应残留 Markdown 符号、段落结构不能丢、图片要带进去。
+// 返回 { level: 'ok' | 'warn' | 'bad', issues: [] }
+async function checkEditorFormatting(page, platform, html) {
+  const issues = [];
+  if (!platform || platform.contentType !== 'richtext') return { level: 'ok', issues };
+  const hit = await pickVisibleIn(page, [...(platform.contentSelectors || []), ...GENERIC_CONTENT], isTitleEl);
+  if (!hit) return { level: 'warn', issues: ['排版检查：未找到编辑器，无法核对'] };
+  const { loc } = hit;
+  const info = await loc.evaluate(el => {
+    const txt = (el.innerText || el.value || '').replace(/\r/g, '');
+    const hasBlock = !!el.querySelector('p, h1, h2, h3, h4, h5, h6, ul, ol, blockquote, pre, table');
+    const pre = el.querySelector('pre');
+    const preTxt = pre ? pre.innerText : '';
+    const codeTxt = Array.from(el.querySelectorAll('code')).map(c => c.innerText).join('\n');
+    const ignore = preTxt + '\n' + codeTxt;
+    const rest = txt.split('\n').filter(l => !ignore.includes(l)).join('\n');
+    return {
+      hasBlock, img: !!el.querySelector('img'),
+      mdHead: /(^|\n)\s{0,3}#{1,6}\s+\S/.test(rest),
+      mdBold: /\*\*[^*\n]+\*\*/.test(rest),
+      mdImg: /!\[[^\]]*\]\(/.test(rest),
+      mdLink: /\[[^\]\n]+\]\([^)]+\)/.test(rest),
+      len: txt.replace(/\s+/g, '').length
+    };
+  }).catch(() => null);
+  if (!info) return { level: 'warn', issues: ['排版检查：无法读取编辑器内容'] };
+  const mdHits = Object.entries({ '标题#': info.mdHead, '加粗**': info.mdBold, '图片![]()': info.mdImg, '链接[]()': info.mdLink }).filter(([, v]) => v).map(([k]) => k);
+  const hadImg = /<img/i.test(String(html || ''));
+  if (mdHits.length) {
+    // 残留 Markdown 符号 = 富文本没被正确接收，直接发出去会乱码
+    issues.push('正文退化为纯文本并残留 Markdown 符号（' + mdHits.join('、') + '）');
+    return { level: 'bad', issues, info };
+  }
+  if (!info.hasBlock && info.len > 60) issues.push('正文未生成段落结构，排版可能堆成一段');
+  if (hadImg && !info.img) issues.push('正文中的图片没有带进编辑器（平台可能不支持粘贴图片，需手动补图）');
+  return { level: issues.length ? 'warn' : 'ok', issues, info };
 }
 
 async function uploadCover(page, platform, coverPath) {
@@ -426,48 +538,67 @@ async function uploadCover(page, platform, coverPath) {
   return false;
 }
 
-async function clickPublish(page) {
-  // 顺序很重要：先试更具体的文案，避免误点「发布设置」
-  for (const t of ['预览并发布', '发布文章', '发布作品', '发布视频', '发布笔记', '立即投稿', '发表', '发布', '提交']) {
+// 发布/确认按钮文案：平台专属优先，通用中文兜底，再补英文（海外平台）
+const DEFAULT_PUBLISH_TEXTS = ['预览并发布', '发布文章', '发布作品', '发布视频', '发布笔记', '立即投稿', '发表', '发布', '提交', 'Publish', 'Post', 'Submit'];
+const DEFAULT_CONFIRM_TEXTS = ['发布文章', '发布', '发表', '确认发布', '确定发布', '仍要发布', '继续发布', '确定', '确认', 'Publish', 'Confirm'];
+// 在候选按钮里按文案找一个可见可点的（角色匹配 -> 精确文案 -> 模糊文案 -> div/span 假按钮）
+async function tryClickButtonText(pageOrDlg, t) {
+  try {
+    const rb = pageOrDlg.getByRole('button', { name: t, exact: true }).first();
+    if (await rb.count() > 0 && await rb.isVisible().catch(() => false)) {
+      try { await rb.evaluate(el => el.click()); return t; }
+      catch { try { await rb.click({ timeout: 4000, force: true }); return t; } catch { /* 继续其他策略 */ } }
+    }
+    const exact = pageOrDlg.locator(`button:text-is("${t}"), a:text-is("${t}")`).first();
+    if (await exact.count() > 0 && await exact.isVisible().catch(() => false)) {
+      await exact.click({ timeout: 5000 });
+      return t;
+    }
+    const loc = pageOrDlg.locator(`button:has-text("${t}"):not(:has-text("设置")):not(:has-text("草稿")), .btn:has-text("${t}"):not(:has-text("设置")), a:has-text("${t}"):not(:has-text("设置"))`).first();
+    if (await loc.count() > 0 && await loc.isVisible().catch(() => false)) {
+      await loc.click({ timeout: 5000 });
+      return t;
+    }
+    // 有些平台用 div/span 当按钮（如小红书「发布笔记」）
+    const any = pageOrDlg.getByText(t, { exact: true });
+    const n = await any.count();
+    for (let i = 0; i < Math.min(n, 10); i++) {
+      const el = any.nth(i);
+      const box = await el.boundingBox().catch(() => null);
+      if (!box || box.x < 0 || box.y < 0) continue;
+      const clickable = await el.evaluate(e => {
+        const s = String(e.className || '') + ' ' + String((e.parentElement && e.parentElement.className) || '');
+        return /btn|publish|submit|button/i.test(s);
+      }).catch(() => false);
+      if (clickable) { await el.click({ timeout: 5000, force: true }); return t; }
+    }
+  } catch { /* 继续候选 */ }
+  return null;
+}
+async function clickPublish(page, platform) {
+  // 1) 平台专属选择器（最精确，不受文案改版影响）
+  for (const s of ((platform && platform.publishSelectors) || [])) {
     try {
-      // 角色+名称匹配，能正确处理按钮内嵌 span、空白和换行
-      const rb = page.getByRole('button', { name: t, exact: true }).first();
-      if (await rb.count() > 0 && await rb.isVisible().catch(() => false)) {
-        try { await rb.evaluate(el => el.click()); return t; }
-        catch { try { await rb.click({ timeout: 4000, force: true }); return t; } catch { /* 继续其他策略 */ } }
-      }
-      const exact = page.locator(`button:text-is("${t}"), a:text-is("${t}")`).first();
-      if (await exact.count() > 0 && await exact.isVisible().catch(() => false)) {
-        await exact.click({ timeout: 5000 });
-        return t;
-      }
-      const loc = page.locator(`button:has-text("${t}"):not(:has-text("设置")):not(:has-text("草稿")), .btn:has-text("${t}"):not(:has-text("设置")), a:has-text("${t}"):not(:has-text("设置"))`).first();
+      const loc = page.locator(s).first();
       if (await loc.count() > 0 && await loc.isVisible().catch(() => false)) {
-        await loc.click({ timeout: 5000 });
-        return t;
-      }
-      // 有些平台用 div/span 当按钮（如小红书「发布笔记」）
-      const any = page.getByText(t, { exact: true });
-      const n = await any.count();
-      for (let i = 0; i < Math.min(n, 10); i++) {
-        const el = any.nth(i);
-        const box = await el.boundingBox().catch(() => null);
-        if (!box || box.x < 0 || box.y < 0) continue;
-        const clickable = await el.evaluate(e => {
-          const s = String(e.className || '') + ' ' + String((e.parentElement && e.parentElement.className) || '');
-          return /btn|publish|submit|button/i.test(s);
-        }).catch(() => false);
-        if (clickable) { await el.click({ timeout: 5000, force: true }); return t; }
+        await loc.scrollIntoViewIfNeeded().catch(() => {});
+        try { await loc.evaluate(el => el.click()); return s; }
+        catch { try { await loc.click({ timeout: 4000, force: true }); return s; } catch { /* 继续 */ } }
       }
     } catch { /* 继续候选 */ }
+  }
+  // 2) 文案匹配：顺序很重要，先试更具体的文案，避免误点「发布设置」
+  for (const t of [...((platform && platform.publishTexts) || []), ...DEFAULT_PUBLISH_TEXTS]) {
+    const hit = await tryClickButtonText(page, t);
+    if (hit) return hit;
   }
   return null;
 }
 // 按钮可能在上传/渲染后才出现，重试等待
-async function clickPublishRetry(page, timeoutMs = 15000) {
+async function clickPublishRetry(page, timeoutMs = 15000, platform) {
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
-    const t = await clickPublish(page);
+    const t = await clickPublish(page, platform);
     if (t) return t;
     await page.waitForTimeout(1000).catch(() => {});
   }
@@ -501,28 +632,19 @@ async function clickPreviewThenPublish(page) {
   return '预览';
 }
 // 发布后的二次确认弹窗（B站/CSDN 常见）
-async function clickConfirm(page) {
+async function clickConfirm(page, platform) {
+  const texts = [...((platform && platform.confirmTexts) || []), ...DEFAULT_CONFIRM_TEXTS];
   // 优先在可见弹窗内点（CSDN 的确认按钮也叫「发布文章」）
   const dialogs = page.locator('[role="dialog"]:visible, .el-dialog:visible, .modal:visible, .ant-modal:visible');
   const dn = await dialogs.count().catch(() => 0);
   if (dn > 0) {
     const dlg = dialogs.nth(dn - 1);
-    for (const t of ['发布文章', '发布', '发表', '确认发布', '确定发布', '仍要发布', '继续发布', '确定', '确认']) {
-      try {
-        const rb = dlg.getByRole('button', { name: t, exact: true }).first();
-        if (await rb.count() > 0 && await rb.isVisible().catch(() => false)) {
-          try { await rb.evaluate(el => el.click()); return t; }
-          catch { try { await rb.click({ timeout: 4000, force: true }); return t; } catch { /* 继续 */ } }
-        }
-        const loc = dlg.locator(`button:text-is("${t}")`).first();
-        if (await loc.count() > 0 && await loc.isVisible().catch(() => false)) {
-          await loc.click({ timeout: 5000 });
-          return t;
-        }
-      } catch { /* 继续 */ }
+    for (const t of texts) {
+      const hit = await tryClickButtonText(dlg, t);
+      if (hit) return hit;
     }
   }
-  for (const t of ['确认发布', '确定发布', '仍要发布', '继续发布', '确定', '确认']) {
+  for (const t of texts) {
     try {
       const rb = page.getByRole('button', { name: t, exact: true }).first();
       if (await rb.count() > 0 && await rb.isVisible().catch(() => false)) {
@@ -608,6 +730,8 @@ module.exports = {
   hasLoginCookies, looksLoggedIn, hitLoginWall, checkLoggedIn, pageHasLoginWall, inlineLocalImages,
   htmlToText, htmlToMd, mdToHtml, fillTitle, fillContent, uploadCover, clickPublish, clickPublishRetry, clickConfirm,
   clickTextButton, clickPreviewThenPublish,
+ waitForPublishSuccess,
+ checkEditorFormatting,
   uploadVideo, uploadMedia, fillDesc, fillTags, GENERIC_DESC, GENERIC_TAGS,
   GENERIC_TITLE, GENERIC_CONTENT
 };
