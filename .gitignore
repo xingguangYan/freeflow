@@ -2,6 +2,8 @@ node_modules/
 release/
 dist/
 data/
+browsers/
+release_v192/
 _pkg_clean/
 _release_data_backup/
 *.log
