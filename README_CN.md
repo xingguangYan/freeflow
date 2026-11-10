@@ -20,6 +20,13 @@
 
 ---
 
+## v1.9.2 更新（内置浏览器 · 不依赖系统 Chrome）
+
+- **登录 / 发布自带浏览器**：一律改用程序内置的 Chromium 内核，不再调用系统 Chrome——没装 Chrome 的电脑也能直接登录和发布，修复了部分用户遇到的「登录启动失败：browserType.launchPersistentContext，Chromium distribution 'chrome' is not found」
+- **安装包开箱即用**：Windows / macOS 安装包已内置浏览器内核，解压即用，体积变大但省去一切前置安装
+- **「安装浏览器内核」按钮**：从源码运行时点一次即可，内核下载到程序自带目录
+- **报错友好化**：万一内核缺失或损坏，会提示去「账号」页一键安装，不再是原始英文堆栈
+
 ## v1.9.1 更新（消息中心 · 中英文切换 · 检查更新）
 
 - **统一消息中心**：左侧栏「消息中心」聚合各平台私信 / 评论 / 系统通知，支持按平台、类型、未读状态筛选；可直接回复并同步发送到源平台（发送前显示目标平台和账号，失败自动保留草稿可重试；不支持自动回复的平台会明确提示，绝不伪造成功）
@@ -145,7 +152,7 @@ zip 解压后把「自由发」拖进「应用程序」；dmg 双击后拖拽安
 xattr -cr /Applications/自由发.app
 ```
 
-macOS 版数据存在 `~/Library/Application Support/自由发`。发布建议安装 Google Chrome；若没装 Chrome，在「账号」页点「安装浏览器内核」会自动下载浏览器（约 150MB，只需一次）。
+macOS 版数据存在 `~/Library/Application Support/自由发`。登录和发布已内置浏览器内核，无需另外安装；从源码运行时若内核缺失，可在「账号」页点「安装浏览器内核」下载（约 150MB，只需一次）。
 
 ### 安卓手机版（v1.5 新增）
 
@@ -311,7 +318,7 @@ npm run pack:mac-intel    # Intel（x64）
 ## 依赖与环境
 
 - **Node.js 20+**
-- 程序内已含 Chromium 自动化能力，**优先调用系统已安装的 Chrome**
+- 程序内置 Chromium 浏览器内核用于登录 / 发布（默认用内置内核，不依赖系统 Chrome）；想改用系统 Chrome 可设置环境变量 `FREEFLOW_BROWSER=chrome`
 - Windows 10 / 11（预打包版本为 win64）
 
 ---

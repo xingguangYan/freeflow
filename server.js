@@ -383,10 +383,13 @@ app.post('/api/browser/install-chromium', async (req, res) => {
     const { spawn } = require('child_process');
     const cli = path.join(__dirname, 'node_modules', 'playwright', 'cli.js');
     if (!fs.existsSync(cli)) return fail('找不到 playwright CLI');
+    // 内核下载到程序自带目录 ./browsers，登录/发布直接用它，不依赖系统浏览器
+    const BROWSERS = path.join(__dirname, 'browsers');
+    try { fs.mkdirSync(BROWSERS, { recursive: true }); } catch { /* */ }
     log('', '', 'info', '开始下载浏览器内核（约 150MB），请稍候…');
     // Electron 打包后 process.execPath 是程序本体；加 ELECTRON_RUN_AS_NODE=1 让它当普通 Node 跑 CLI
     const child = spawn(process.execPath, [cli, 'install', 'chromium'], {
-      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', PLAYWRIGHT_BROWSERS_PATH: BROWSERS },
       stdio: ['ignore', 'pipe', 'pipe']
     });
     child.stdout.on('data', d => log('', '', 'info', '内核下载: ' + String(d).trim()));

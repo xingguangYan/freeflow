@@ -17,6 +17,13 @@ Freeflow drives **your own accounts** through browser automation. It cracks noth
 
 ---
 
+## v1.9.2 release (built-in browser · no system Chrome needed)
+
+- **Login & publishing use the built-in browser**: everything now runs on the bundled Chromium core instead of the system Chrome — computers without Chrome installed can log in and publish right away. Fixes the "browserType.launchPersistentContext: Chromium distribution 'chrome' is not found" error some users hit.
+- **Out of the box**: the Windows / macOS packages ship the browser core inside — unzip and run, no prerequisite installs (bigger download, zero setup).
+- **"Install browser core" button**: for source runs, one click downloads the core into the app's own folder.
+- **Friendlier errors**: if the core is ever missing or broken, the app points you to the one-click install instead of dumping a raw English stack trace.
+
 ## v1.9.1 release (message center · EN/中文 switch · update check)
 
 - **Unified message center**: the "Messages" tab aggregates DMs, comments, and system notifications from every connected platform, filterable by platform, type, and unread state. Reply right in the app and the reply is sent through the source platform (target platform and account are shown before sending; failures keep a draft for retry; platforms without reliable reply support say so explicitly — nothing is faked).
@@ -142,7 +149,7 @@ Unzip and drag 自由发 into Applications, or mount the dmg and drag to install
 xattr -cr /Applications/自由发.app
 ```
 
-macOS data lives in `~/Library/Application Support/自由发`. Google Chrome is recommended for publishing; if it is not installed, "Install browser core" on the Accounts tab downloads one (about 150 MB, once).
+macOS data lives in `~/Library/Application Support/自由发`. Login and publishing already ship with a bundled browser core; for source runs, "Install browser core" on the Accounts tab downloads one (about 150 MB, once).
 
 ### Android app (v1.5)
 
@@ -300,7 +307,7 @@ Outputs land in `release/自由发-darwin-arm64` and `release/自由发-darwin-x
 ## Dependencies & environment
 
 - **Node.js 20+**
-- Chromium automation is bundled, but **the system-installed Chrome is preferred**
+- A Chromium browser core is bundled and used by default for login / publishing (no system Chrome needed); set `FREEFLOW_BROWSER=chrome` to use the system Chrome instead
 - Windows 10 / 11 (the prebuilt package is win64)
 
 ---

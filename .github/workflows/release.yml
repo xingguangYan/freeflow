@@ -23,6 +23,14 @@ jobs:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
         run: npm ci
 
+      - name: Download bundled browser core
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: browsers
+        run: |
+          npx playwright install chromium
+          Get-ChildItem browsers -Directory | Where-Object { $_.Name -like 'chromium_headless_shell*' } | Remove-Item -Recurse -Force
+        shell: pwsh
+
       - name: Package app
         run: npm run pack
 
@@ -38,12 +46,13 @@ jobs:
       - name: Publish release asset
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.9.1
-          name: 自由发 v1.9.1 · Windows + macOS + Android + iOS 四端
+          tag_name: v1.9.2
+          name: 自由发 v1.9.2 · Windows + macOS + Android + iOS 四端
           files: release/freeflow-win64.zip
           body: |
-            自由发 v1.9.1 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
+            自由发 v1.9.2 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
 
+            v1.9.2 更新：内置浏览器——登录 / 发布一律改用程序自带的 Chromium 内核，不再依赖系统 Chrome，修复「没装 Chrome 时报 browserType.launchPersistentContext: Chromium not found」的问题，安装包解压即用；「安装浏览器内核」按钮也改为下载到程序自带目录，从源码运行同样生效。
             v1.9.1 更新：统一消息中心——聚合各平台私信 / 评论 / 系统通知，按平台/类型/未读筛选，可直接回复并同步发送到源平台（发送前显示目标平台和账号，失败自动留草稿可重试，不支持的平台明确提示）；顶栏中英文一键切换；软件内「检查更新」+ 每次启动自动检测 GitHub Release，有新版弹窗展示更新内容；数据采集改走各平台创作数据中心（知乎 / CSDN / B站等 16 个平台）；趋势图支持按平台切换；大模型生成结果预览 / 源码双视图。
             v1.9 更新：「我的大模型」模块——左侧栏导入自己的大模型辅助创作，内置 OpenAI / DeepSeek / 通义千问 / 智谱 GLM / Kimi / 豆包 / Gemini / Ollama 本地 / 硅基流动 9 个厂商预设（也可自定义任意 OpenAI 兼容端点），支持连通测试、拉模型列表、本地素材当上下文、生成结果一键存草稿箱去发布；一键检测登录、立即/定时发布拆成两个按钮；修复 CSDN 富文本链接误进 Markdown 编辑器导致的乱码、百家号正文误填进标题。v1.8：全平台自动发布 + 发布前排版检查；v1.7：编辑器排版大升级、小红书多入口分流
 
@@ -57,6 +66,7 @@ jobs:
             - 网页图片直接粘贴（自动下载进素材库）
             - 平台数据看板（粉丝/阅读/点赞趋势图，按平台切换）
             - 统一消息中心（各平台私信 / 评论 / 通知聚合 + 直接回复）
+            - 内置浏览器内核，不装系统 Chrome 也能用
             - 中英文一键切换 + 软件内检查更新
             - 文章搜索、复制、删除；任务重试、删除、清空历史
             - 登录态三重检测，过期自动提示扫码
@@ -78,6 +88,13 @@ jobs:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
         run: npm ci
 
+      - name: Download bundled browser core
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: browsers
+        run: |
+          npx playwright install chromium
+          rm -rf browsers/chromium_headless_shell-*
+
       - name: Package arm64 (Apple Silicon)
         run: npm run pack:mac
 
@@ -97,16 +114,17 @@ jobs:
       - name: Publish macOS assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.9.1
-          name: 自由发 v1.9.1 · Windows + macOS + Android + iOS 四端
+          tag_name: v1.9.2
+          name: 自由发 v1.9.2 · Windows + macOS + Android + iOS 四端
           files: |
             release/freeflow-mac-arm64.zip
             release/freeflow-mac-arm64.dmg
             release/freeflow-mac-x64.zip
             release/freeflow-mac-x64.dmg
           body: |
-            自由发 v1.9.1 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
+            自由发 v1.9.2 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
 
+            v1.9.2 更新：内置浏览器——登录 / 发布一律改用程序自带的 Chromium 内核，不再依赖系统 Chrome，修复「没装 Chrome 时报 browserType.launchPersistentContext: Chromium not found」的问题，安装包解压即用；「安装浏览器内核」按钮也改为下载到程序自带目录，从源码运行同样生效。
             v1.9.1 更新：统一消息中心——聚合各平台私信 / 评论 / 系统通知，按平台/类型/未读筛选，可直接回复并同步发送到源平台（发送前显示目标平台和账号，失败自动留草稿可重试，不支持的平台明确提示）；顶栏中英文一键切换；软件内「检查更新」+ 每次启动自动检测 GitHub Release，有新版弹窗展示更新内容；数据采集改走各平台创作数据中心（知乎 / CSDN / B站等 16 个平台）；趋势图支持按平台切换；大模型生成结果预览 / 源码双视图。
             v1.9 更新：「我的大模型」模块——左侧栏导入自己的大模型辅助创作，内置 OpenAI / DeepSeek / 通义千问 / 智谱 GLM / Kimi / 豆包 / Gemini / Ollama 本地 / 硅基流动 9 个厂商预设（也可自定义任意 OpenAI 兼容端点），支持连通测试、拉模型列表、本地素材当上下文、生成结果一键存草稿箱去发布；一键检测登录、立即/定时发布拆成两个按钮；修复 CSDN 富文本链接误进 Markdown 编辑器导致的乱码、百家号正文误填进标题。v1.8：全平台自动发布 + 发布前排版检查；v1.7：编辑器排版大升级、小红书多入口分流
 
@@ -120,6 +138,7 @@ jobs:
             - 网页图片直接粘贴（自动下载进素材库）
             - 平台数据看板（粉丝/阅读/点赞趋势图，按平台切换）
             - 统一消息中心（各平台私信 / 评论 / 通知聚合 + 直接回复）
+            - 内置浏览器内核，不装系统 Chrome 也能用
             - 中英文一键切换 + 软件内检查更新
             - 文章搜索、复制、删除；任务重试、删除、清空历史
             - 登录态三重检测，过期自动提示扫码
@@ -167,12 +186,13 @@ jobs:
       - name: Publish Android asset
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.9.1
-          name: 自由发 v1.9.1 · Windows + macOS + Android + iOS 四端
+          tag_name: v1.9.2
+          name: 自由发 v1.9.2 · Windows + macOS + Android + iOS 四端
           files: freeflow-android.apk
           body: |
-            自由发 v1.9.1 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
+            自由发 v1.9.2 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
 
+            v1.9.2 更新：内置浏览器——登录 / 发布一律改用程序自带的 Chromium 内核，不再依赖系统 Chrome，修复「没装 Chrome 时报 browserType.launchPersistentContext: Chromium not found」的问题，安装包解压即用；「安装浏览器内核」按钮也改为下载到程序自带目录，从源码运行同样生效。
             v1.9.1 更新：统一消息中心——聚合各平台私信 / 评论 / 系统通知，按平台/类型/未读筛选，可直接回复并同步发送到源平台（发送前显示目标平台和账号，失败自动留草稿可重试，不支持的平台明确提示）；顶栏中英文一键切换；软件内「检查更新」+ 每次启动自动检测 GitHub Release，有新版弹窗展示更新内容；数据采集改走各平台创作数据中心（知乎 / CSDN / B站等 16 个平台）；趋势图支持按平台切换；大模型生成结果预览 / 源码双视图。
             v1.9 更新：「我的大模型」模块——左侧栏导入自己的大模型辅助创作，内置 OpenAI / DeepSeek / 通义千问 / 智谱 GLM / Kimi / 豆包 / Gemini / Ollama 本地 / 硅基流动 9 个厂商预设（也可自定义任意 OpenAI 兼容端点），支持连通测试、拉模型列表、本地素材当上下文、生成结果一键存草稿箱去发布；一键检测登录、立即/定时发布拆成两个按钮；修复 CSDN 富文本链接误进 Markdown 编辑器导致的乱码、百家号正文误填进标题。v1.8：全平台自动发布 + 发布前排版检查；v1.7：编辑器排版大升级、小红书多入口分流
 
@@ -186,6 +206,7 @@ jobs:
             - 网页图片直接粘贴（自动下载进素材库）
             - 平台数据看板（粉丝/阅读/点赞趋势图，按平台切换）
             - 统一消息中心（各平台私信 / 评论 / 通知聚合 + 直接回复）
+            - 内置浏览器内核，不装系统 Chrome 也能用
             - 中英文一键切换 + 软件内检查更新
             - 文章搜索、复制、删除；任务重试、删除、清空历史
             - 登录态三重检测，过期自动提示扫码
@@ -228,12 +249,13 @@ jobs:
       - name: Publish iOS asset
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.9.1
-          name: 自由发 v1.9.1 · Windows + macOS + Android + iOS 四端
+          tag_name: v1.9.2
+          name: 自由发 v1.9.2 · Windows + macOS + Android + iOS 四端
           files: freeflow-ios.ipa
           body: |
-            自由发 v1.9.1 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
+            自由发 v1.9.2 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
 
+            v1.9.2 更新：内置浏览器——登录 / 发布一律改用程序自带的 Chromium 内核，不再依赖系统 Chrome，修复「没装 Chrome 时报 browserType.launchPersistentContext: Chromium not found」的问题，安装包解压即用；「安装浏览器内核」按钮也改为下载到程序自带目录，从源码运行同样生效。
             v1.9.1 更新：统一消息中心——聚合各平台私信 / 评论 / 系统通知，按平台/类型/未读筛选，可直接回复并同步发送到源平台（发送前显示目标平台和账号，失败自动留草稿可重试，不支持的平台明确提示）；顶栏中英文一键切换；软件内「检查更新」+ 每次启动自动检测 GitHub Release，有新版弹窗展示更新内容；数据采集改走各平台创作数据中心（知乎 / CSDN / B站等 16 个平台）；趋势图支持按平台切换；大模型生成结果预览 / 源码双视图。
             v1.9 更新：「我的大模型」模块——左侧栏导入自己的大模型辅助创作，内置 OpenAI / DeepSeek / 通义千问 / 智谱 GLM / Kimi / 豆包 / Gemini / Ollama 本地 / 硅基流动 9 个厂商预设（也可自定义任意 OpenAI 兼容端点），支持连通测试、拉模型列表、本地素材当上下文、生成结果一键存草稿箱去发布；一键检测登录、立即/定时发布拆成两个按钮；修复 CSDN 富文本链接误进 Markdown 编辑器导致的乱码、百家号正文误填进标题。v1.8：全平台自动发布 + 发布前排版检查；v1.7：编辑器排版大升级、小红书多入口分流
 
@@ -247,6 +269,7 @@ jobs:
             - 网页图片直接粘贴（自动下载进素材库）
             - 平台数据看板（粉丝/阅读/点赞趋势图，按平台切换）
             - 统一消息中心（各平台私信 / 评论 / 通知聚合 + 直接回复）
+            - 内置浏览器内核，不装系统 Chrome 也能用
             - 中英文一键切换 + 软件内检查更新
             - 文章搜索、复制、删除；任务重试、删除、清空历史
             - 登录态三重检测，过期自动提示扫码

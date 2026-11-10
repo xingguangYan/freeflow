@@ -3,9 +3,18 @@
 // - 每个账号一个独立 user-data-dir（profiles/<accountId>），登录态存本地磁盘。
 // - 发布固定为「有头」模式：平台随时可能弹验证码/确认，人可以接管。
 // - 填充策略：平台专属候选 -> 通用启发式 -> 手动模式（内容已进剪贴板）。
+// - v1.9.2 起：登录/发布一律用程序自带的浏览器内核（./browsers），不再依赖系统 Chrome。
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+// 内置浏览器内核：./browsers 由打包 CI 或「账号」页「安装浏览器内核」下载。
+// 目录里有 chromium 内核才锁定它，否则回落到用户级缓存（从源码运行也行）。
+const BUNDLED = path.join(__dirname, 'browsers');
+try {
+  if (fs.existsSync(BUNDLED) && fs.readdirSync(BUNDLED).some(d => /^chromium/.test(d)) && !process.env.PLAYWRIGHT_BROWSERS_PATH) {
+    process.env.PLAYWRIGHT_BROWSERS_PATH = BUNDLED;
+  }
+} catch { /* */ }
 const { chromium } = require('playwright');
 const { DATA, MATERIALS } = require('./store');
 
@@ -49,6 +58,9 @@ function chromeInstalled() {
     path.join(home, 'Applications/Google Chrome.app/Contents/MacOS/Google Chrome'),
     '/Applications/Chromium.app/Contents/MacOS/Chromium'
   ];
+  // Windows：用户级（%LOCALAPPDATA%）与两个 Program Files 位置都查一遍
+  const winRoots = [process.env.LOCALAPPDATA, process.env.PROGRAMFILES, process.env['PROGRAMFILES(X86)']].filter(Boolean);
+  for (const root of winRoots) paths.push(path.join(root, 'Google', 'Chrome', 'Application', 'chrome.exe'));
   return paths.some(p => { try { return fs.existsSync(p); } catch { return false; } });
 }
 // 删掉 POSIX 风格的 profile 锁文件（Windows 上一般不需要，但留着无害）。
@@ -68,12 +80,14 @@ async function launch(accountId) {
   };
   const dir = profileDir(accountId);
   let lastErr = null;
+  let forceBundledRetry = false;
   // 启动失败最常见的原因是：上一次的 Chrome 没退干净，profile 目录被锁。清残留后重试。
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      // 优先用系统已装的 Chrome（自带 VC++ 运行环境，也更不容易被识别为自动化浏览器）；
-      // 装了 FREEFLOW_BROWSER=chromium 或系统没有 Chrome 时回退到 Playwright 自带内核。
-      const wantBundled = process.env.FREEFLOW_BROWSER === 'chromium' || (process.platform === 'darwin' && !chromeInstalled());
+      // v1.9.2 起默认用自带内核：不依赖系统浏览器、开箱即用、版本可控。
+      // 高级用户可用 FREEFLOW_BROWSER=chrome 改回系统 Chrome；若系统 Chrome 找不到会自动回落。
+      const forceChrome = process.env.FREEFLOW_BROWSER === 'chrome';
+      const wantBundled = forceChrome ? forceBundledRetry : true;
       if (!wantBundled) {
         return await chromium.launchPersistentContext(dir, { ...opts, channel: 'chrome' });
       }
@@ -81,11 +95,16 @@ async function launch(accountId) {
       return await chromium.launchPersistentContext(dir, opts);
     } catch (e) {
       lastErr = e;
+      if (/not found|install (chrome|chromium)|Executable path|executable doesn't exist/i.test(String(e.message || ''))) forceBundledRetry = true;
       const n = killLingerChrome(dir);
       clearProfileLock(dir);
       console.warn(`[launch] 第 ${attempt + 1} 次启动失败（${String(e.message).split('\n')[0]}），清理残留 Chrome ${n} 个后重试`);
       await new Promise(r => setTimeout(r, 1200));
     }
+  }
+  const m = String((lastErr || {}).message || '');
+  if (forceBundledRetry || /not found|install (chrome|chromium)|Executable path|executable doesn't exist/i.test(m)) {
+    throw new Error('没有可用的浏览器内核：请在「账号」页点「安装浏览器内核」下载（约150MB，只需一次）；已下载过则可能是内核不完整，重装一次即可');
   }
   throw lastErr || new Error('浏览器启动失败');
 }
