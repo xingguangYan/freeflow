@@ -3,6 +3,7 @@
 ### 自媒体多平台分发工具 · 本地运行 · 免费开源
 
 **[English](README.md)** · 中文
+> 国内访问镜像：[gitcode.com/qq_31988139/freeflow](https://gitcode.com/qq_31988139/freeflow)
 
 用浏览器自动化操作**你自己的账号**。不破解任何软件，不经过任何第三方服务器，所有登录态、素材和发布记录都保存在本机。已打包为独立 Windows 程序，免安装。
 （v1.4 起同时提供 macOS 版，见下方「macOS 版本」。）

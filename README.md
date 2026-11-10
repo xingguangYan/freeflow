@@ -3,6 +3,7 @@
 ### Multi-platform publishing tool for content creators · Runs locally · Free & open source
 
 **[中文文档](README_CN.md)** · English
+> China mirror: [gitcode.com/qq_31988139/freeflow](https://gitcode.com/qq_31988139/freeflow)
 
 Freeflow drives **your own accounts** through browser automation. It cracks nothing, routes nothing through third-party servers, and keeps all login states, assets, and publish history on your own machine. Ships as a standalone Windows app, no installer needed, with a macOS build available since v1.4 (see [macOS build](#macos-build-apple-silicon--intel)).
 
