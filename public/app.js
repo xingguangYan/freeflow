@@ -150,6 +150,7 @@ async function selectArticle(id) {
   renderCoverSelect();
   renderArticleList();
   updateArtStats();
+  resetEdHist();
 }
 function applyMode(mode) {
   $$('#view-articles input[name="artMode"]').forEach(r => r.checked = (r.value === mode));
@@ -195,7 +196,9 @@ $('#btnNewArticle').onclick = async () => {
   const a = await api('/api/articles', { method: 'POST', body: JSON.stringify({ title: '未命名文章' }) });
   S.articles.push(a); renderArticleList(); await selectArticle(a.id); updateTopStats(); toast('已新建文章');
 };
+let saveSeq = 0;
 async function saveCurrent(notify = true) {
+  const seq = ++saveSeq;
   // 没有选中任何文章时，编辑器里的内容直接保存为新草稿，并自动选中它
   if (!S.current) {
     const mode = ($('#view-articles input[name="artMode"]:checked') || {}).value || 'richtext';
@@ -206,6 +209,7 @@ async function saveCurrent(notify = true) {
     try {
       const body = { type: 'article', mode, title: title || '未命名', content, cover: null, tags: '', videoFile: null, videoPath: null, audioFile: null, audioPath: null };
       const a = await api('/api/articles', { method: 'POST', body: JSON.stringify(body) });
+      if (seq !== saveSeq) return;
       S.articles.push(a);
       S.current = a;
       $('#editorTitle').textContent = a.title;
@@ -222,6 +226,7 @@ async function saveCurrent(notify = true) {
   const showTags = type === 'video' || type === 'audio';
   const body = { id: S.current.id, type, mode, title: $('#artTitle').value.trim() || '未命名', content, cover: S.current.cover, tags: showTags ? $('#artTags').value.trim() : (S.current.tags || ''), videoFile: S.current.videoFile || null, videoPath: S.current.videoPath || null, audioFile: S.current.audioFile || null, audioPath: S.current.audioPath || null };
   const a = await api('/api/articles', { method: 'POST', body: JSON.stringify(body) });
+  if (seq !== saveSeq) return;
   Object.assign(S.current, a);
   $('#editorTitle').textContent = a.title;
   const li = $$('#articleList li').find(x => x.dataset.id === a.id);
@@ -238,6 +243,7 @@ $('#btnDelArticle').onclick = async () => {
   S.articles = S.articles.filter(a => a.id !== S.current.id);
   S.current = null;
   $('#editorTitle').textContent = '未选择文章'; $('#artTitle').value = ''; $('#artContent').innerHTML = ''; $('#artMd').value = '';
+  resetEdHist();
   renderArticleList(); renderPubArticleSelect(); updateTopStats(); toast('已删除');
 };
 $('#btnDupArticle').onclick = async () => {
@@ -266,34 +272,76 @@ $('#btnScanArticle').onclick = () => {
   $('#sensText').value = txt;
   scanSensitive();
 };
-// 编辑器撤销/重做：自维护历史栈，按钮和 Ctrl+Z/Y 都走这里（原生历史对节点级排版无效）
-const edHist = { undo: [], redo: [] };
-let edHistTimer = null;
-function pushEdHist() {
+// 编辑器撤销/重做：历史栈按文章隔离（切换/新建/删除文章都会重置），快照记录在「改动前」，
+// 撤销后恢复光标；输入法组合期间不拦截任何按键，普通按键（含空格）不做任何处理。
+const edHist = { articleId: null, undo: [], redo: [], lastPush: 0 };
+function currentArticleKey() { return (S.current && S.current.id) || '__new__'; }
+function resetEdHist() { edHist.articleId = currentArticleKey(); edHist.undo = []; edHist.redo = []; edHist.lastPush = 0; }
+function syncHistArticle() {
+  const id = currentArticleKey();
+  if (edHist.articleId !== id) { edHist.articleId = id; edHist.undo = []; edHist.redo = []; edHist.lastPush = 0; }
+}
+function pushEdHist(force) {
+  syncHistArticle();
   const snap = $('#artContent').innerHTML;
+  const now = Date.now();
+  if (!force && edHist.undo.length && now - edHist.lastPush < 700) return;
+  edHist.lastPush = now;
   if (edHist.undo.length && edHist.undo[edHist.undo.length - 1] === snap) return;
   edHist.undo.push(snap);
-  if (edHist.undo.length > 60) edHist.undo.shift();
+  if (edHist.undo.length > 80) edHist.undo.shift();
   edHist.redo.length = 0;
 }
+function caretOffset() {
+  const ed = $('#artContent');
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return null;
+  const r = sel.getRangeAt(0);
+  if (!ed.contains(r.endContainer)) return null;
+  const pre = r.cloneRange(); pre.selectNodeContents(ed); pre.setEnd(r.endContainer, r.endOffset);
+  return pre.toString().length;
+}
+function setCaret(offset) {
+  const ed = $('#artContent');
+  if (offset === null || offset === undefined) return;
+  const walker = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT);
+  let pos = 0, node;
+  while ((node = walker.nextNode())) {
+    const len = (node.nodeValue || '').length;
+    if (pos + len >= offset) {
+      const r = document.createRange();
+      r.setStart(node, Math.min(offset - pos, len)); r.collapse(true);
+      const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      ed.focus(); return;
+    }
+    pos += len;
+  }
+  const r = document.createRange(); r.selectNodeContents(ed); r.collapse(false);
+  const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); ed.focus();
+}
 function restoreEd(stackFrom, stackTo) {
+  syncHistArticle();
   const ed = $('#artContent');
   if (!stackFrom.length) { toast('没有可撤销的步骤了'); return; }
+  const caret = caretOffset();
   stackTo.push(ed.innerHTML);
   ed.innerHTML = stackFrom.pop();
+  setCaret(caret);
   updateArtStats(); saveCurrent(false);
 }
 function doUndo() { restoreEd(edHist.undo, edHist.redo); }
 function doRedo() { restoreEd(edHist.redo, edHist.undo); }
-$('#artContent').addEventListener('input', () => {
-  clearTimeout(edHistTimer);
-  edHistTimer = setTimeout(pushEdHist, 600);
+$('#artContent').addEventListener('beforeinput', e => {
+  if (e.isComposing || e.inputType === 'insertCompositionText') return;
+  pushEdHist(false);
 });
 $('#artContent').addEventListener('keydown', e => {
+  if (e.isComposing || e.keyCode === 229) return;
   const mod = e.ctrlKey || e.metaKey;
+  if (!mod) return;
   const k = (e.key || '').toLowerCase();
-  if (mod && k === 'z' && !e.shiftKey) { e.preventDefault(); doUndo(); }
-  else if (mod && (k === 'y' || (k === 'z' && e.shiftKey))) { e.preventDefault(); doRedo(); }
+  if (k === 'z' && !e.shiftKey) { e.preventDefault(); doUndo(); }
+  else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); doRedo(); }
 });
 $('#edToolbar').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
@@ -302,7 +350,7 @@ $('#edToolbar').addEventListener('click', e => {
   if (cmd === 'insertImage') { insertMaterialImage(); return; }
   if (cmd === 'undo') { doUndo(); return; }
   if (cmd === 'redo') { doRedo(); return; }
-  pushEdHist();
+  pushEdHist(true);
   if (cmd === 'table') { insertTable(); return; }
   if (cmd === 'hr') document.execCommand('insertHorizontalRule', false, null);
   else if (['h1', 'h2', 'h3', 'p', 'blockquote', 'pre'].includes(cmd)) document.execCommand('formatBlock', false, '<' + cmd + '>');
@@ -312,7 +360,7 @@ $('#edToolbar').addEventListener('click', e => {
 $('#tbAlign').addEventListener('change', e => {
   if (!e.target.value) return;
   $('#artContent').focus();
-  pushEdHist();
+  pushEdHist(true);
   document.execCommand(e.target.value, false, null);
   e.target.value = '';
   updateArtStats();
@@ -336,7 +384,7 @@ function styleSelection(style) {
   if (!sel || !sel.rangeCount) return toast('先在正文里选中要排版的文字');
   const range = sel.getRangeAt(0);
   if (range.collapsed) return toast('先选中文字再设置字号 / 颜色 / 行高');
-  pushEdHist();
+  pushEdHist(true);
   const span = document.createElement('span');
   Object.assign(span.style, style);
   try { range.surroundContents(span); }
@@ -350,7 +398,7 @@ function styleSelection(style) {
 }
 function insertTable() {
   const ed = $('#artContent'); ed.focus();
-  pushEdHist();
+  pushEdHist(true);
   const row = '<tr><td>单元格</td><td>单元格</td><td>单元格</td></tr>';
   document.execCommand('insertHTML', false, '<table><tbody>' + row + row + '</tbody></table><p></p>');
   updateArtStats(); saveCurrent(false);
@@ -374,7 +422,7 @@ function doInsertImage(m) {
   if (!m) return;
   const ed = $('#artContent');
   ed.focus();
-  pushEdHist();
+  pushEdHist(true);
   const sel = window.getSelection();
   sel.removeAllRanges();
   if (savedRange && ed.contains(savedRange.startContainer)) {
@@ -722,19 +770,23 @@ function requestPublish(scheduled) {
 function closePublishPreview() { $('#previewModal').style.display = 'none'; pendingPublish = null; pendingPublishScheduled = false; }
 $('#previewCancel').onclick = closePublishPreview;
 $('#previewModal').addEventListener('click', e => { if (e.target.id === 'previewModal') closePublishPreview(); });
+let publishing = false;
 $('#previewConfirm').onclick = async () => {
+  if (publishing) return;
   if (!confirm('确认发布到以上账号？')) return;
   const articleId = $('#pubArticle').value;
   const accountIds = $$('#pubAccounts input:checked').map(i => i.value);
   if (!articleId || !accountIds.length) { closePublishPreview(); return toast('请重新选择文章与账号'); }
   const scheduledAt = pendingPublishScheduled ? ($('#pubSchedule').value || null) : null;
   closePublishPreview();
+  publishing = true;
   try {
     await api('/api/tasks', { method: 'POST', body: JSON.stringify({ articleId, accountIds, scheduledAt }) });
     $('#pubSchedule').value = '';
     toast(scheduledAt ? '已加入定时队列' : '开始分发，浏览器会逐个打开平台编辑页');
     renderTasks(); startTaskPoll();
   } catch (e) { toast('创建发布任务失败：' + e.message); }
+  finally { publishing = false; }
 };
 async function renderTasks() {
   const tasks = await api('/api/tasks');
@@ -812,6 +864,7 @@ function renderMessages() {
   const el = $('#msgList'); if (!el) return;
   const items = msgItems();
   if (!Object.keys(MSG.snaps).length) { el.innerHTML = '<div class="empty">还没有消息<br>点上方「采集消息」拉取各平台私信/评论/通知</div>'; return; }
+  MSG.rowIndex = [];
   const cards = S.accounts.map(a => {
     const snap = MSG.snaps[a.id];
     if (!snap) return '';
@@ -820,6 +873,7 @@ function renderMessages() {
       (!MSG.filter.type || it.type === MSG.filter.type) && (!MSG.filter.unread || it.unread));
     const unreadN = (snap.items || []).filter(i => i.unread).length;
     if (snap.supported === false) return '<div class="stat-card"><div class="row1">' + platAvatar(a.platformId) + '<div style="flex:1;min-width:0"><div class="name">' + esc(a.name) + '</div><div class="muted">' + platName(a.platformId) + ' · 未接入消息页</div></div></div><div class="stat-pills"><span class="muted">' + esc(snap.note || '') + '</span></div></div>';
+    if (snap.error) return '<div class="stat-card"><div class="row1">' + platAvatar(a.platformId) + '<div style="flex:1;min-width:0"><div class="name">' + esc(a.name) + '</div><div class="muted">' + platName(a.platformId) + ' · 采集失败</div></div></div><div class="stat-pills"><span class="muted">' + esc(snap.error) + ' <button class="btn small" data-msglogin="' + a.id + '">去登录</button></span></div></div>';
     if (snap.logged === false) return '<div class="stat-card"><div class="row1">' + platAvatar(a.platformId) + '<div style="flex:1;min-width:0"><div class="name">' + esc(a.name) + '</div><div class="muted">' + platName(a.platformId) + ' · 未登录</div></div></div><div class="stat-pills"><span class="muted">' + esc(snap.note || '') + ' <button class="btn small" data-msglogin="' + a.id + '">去登录</button></span></div></div>';
     if (!items2.length) return '';
     return '<div class="stat-card"><div class="row1">' + platAvatar(a.platformId) + '<div style="flex:1;min-width:0"><div class="name">' + esc(a.name) + ' · ' + platName(a.platformId) + (unreadN ? ' · <span class="pill ok">未读 ' + unreadN + '</span>' : '') + '</div></div></div>' +
@@ -828,13 +882,13 @@ function renderMessages() {
         return '<div class="msg-row" style="display:flex;gap:8px;align-items:center;padding:5px 2px;border-top:1px solid #eee">' +
           '<span class="pill ' + (it.unread ? 'ok' : 'gray') + '">' + (it.type === 'dm' ? '私信' : it.type === 'comment' ? '评论' : '通知') + '</span>' +
           '<div style="flex:1;min-width:0"><strong>' + esc(it.from) + '</strong> <span class="muted">' + esc(it.time || '') + (it.unread ? ' · 未读' : '') + '</span><div style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(it.snippet) + (draft ? ' <span class="pill warn">有草稿</span>' : '') + '</div></div>' +
-          '<button class="btn small" data-msgreply="' + a.id + '|' + it.from + '">回复</button></div>';
+          '<button class="btn small" data-msgidx="' + MSG.rowIndex.push({ accountId: a.id, from: it.from }) - 1 + '">回复</button></div>';
       }).join('') + '</div></div>';
   }).filter(Boolean).join('');
   el.innerHTML = cards || '<div class="empty">当前筛选下没有消息</div>';
-  $('#msgList [data-msgreply]').forEach(b => b.onclick = () => {
-    const [accountId, from] = b.dataset.msgreply.split('|');
-    openMsgReply(accountId, from);
+  $('#msgList [data-msgidx]').forEach(b => b.onclick = () => {
+    const row = MSG.rowIndex[Number(b.dataset.msgidx)];
+    if (row) openMsgReply(row.accountId, row.from);
   });
   $('#msgList [data-msglogin]').forEach(b => b.onclick = () => switchView('accounts', '账号'));
 }
@@ -881,9 +935,15 @@ $('#btnMsgCollect').onclick = async () => {
   const btn = $('#btnMsgCollect'); btn.disabled = true; btn.textContent = '采集中…';
   toast('正在逐个打开平台消息页，请稍候（全自动，勿关闭弹出的浏览器）');
   try {
-    await api('/api/messages/collect', { method: 'POST', body: JSON.stringify({}) });
+    const r = await api('/api/messages/collect', { method: 'POST', body: JSON.stringify({}) });
     await loadMessages();
-    toast('消息采集完成');
+    const res = (r && r.results) || {};
+    const all = Object.values(res);
+    const fails = all.filter(x => x && x.error);
+    if (fails.length) {
+      const names = fails.map(x => platName(x.platformId) + '(' + String(x.error).slice(0, 30) + ')').slice(0, 4).join('、');
+      toast('采集完成：' + (all.length - fails.length) + ' 成功 / ' + fails.length + ' 失败 — ' + names);
+    } else toast('消息采集完成');
   } catch (e) { toast('采集失败: ' + e.message); }
   finally { btn.disabled = false; btn.textContent = '采集消息'; }
 };
