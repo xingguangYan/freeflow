@@ -45,6 +45,31 @@ const check = (n, c) => { c ? pass++ : fail++; console.log((c ? 'PASS  ' : 'FAIL
   try { await messages.reply({ platformId: 'zhihu', name: 'x' }, '张三', ''); } catch (e) { err3 = e.message; }
   check('empty reply rejected', /不能为空/.test(err3));
 
+
+  // 5. 接口 JSON 解析：会话列表 + 嵌套 lastMsg（真实平台常见结构）
+  const apiItems = messages.parseMessageJson([{ url: 'https://x/api', json: { data: { sessions: [
+    { user: { name: 'Alice' }, lastMsg: { content: '你好', time: 1730000000000 }, unread: 1 },
+    { sender: { nickname: 'Bob' }, last_message: { text: '评论了你的文章：写得好' }, created_at: '2026-11-10 12:30' }
+  ] } } }], 'zhihu');
+  check('api json parsed 2 items', apiItems.length === 2);
+  check('api json nested from/text', apiItems[0].from === 'Alice' && apiItems[0].snippet === '你好');
+  check('api json nested time', /\d{2}-\d{2} \d{2}:\d{2}/.test(apiItems[0].time));
+  check('api json unread + classify', apiItems[0].unread === true && apiItems[1].type === 'comment');
+  // 6. 去重与超长文章行过滤
+  const dup = messages.parseMessageJson([{ json: { list: [
+    { from: 'A', content: 'hi', time: 1730000000000 },
+    { from: 'A', content: 'hi', time: 1730000001000 },
+    { title: 'x'.repeat(200), from: 'B' }
+  ] } }], 'csdn');
+  check('dedupe + drop long article rows', dup.length === 1);
+
+  // 7. B站真实字段族：account_info + last_msg + unread_count
+  const bili = messages.parseMessageJson([{ json: { code: 0, data: { session_list: [
+    { account_info: { name: 'B站用户' }, last_msg: { content: '在吗', timestamp: 1730000000000 }, unread_count: 2 }
+  ] } } }], 'bilibili');
+  check('bilibili field family parsed', bili.length === 1 && bili[0].from === 'B站用户' && bili[0].snippet === '在吗');
+  check('bilibili time + unread', /\d{2}-\d{2} \d{2}:\d{2}/.test(bili[0].time) && bili[0].unread === true);
+
   await browser.close();
   // 清理临时数据
   try { fs.rmSync(process.env.FREEFLOW_DATA, { recursive: true, force: true }); } catch { /* */ }
