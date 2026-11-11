@@ -20,6 +20,13 @@
 
 ---
 
+## v1.9.3 更新（消息中心 · 数据采集 · 编辑器综合修复）
+
+- **消息中心重构**：采集改为解析平台页面自身的真实 JSON 接口（会话 `lastMsg`、B站 `account_info/last_msg` 等字段族），DOM + iframe 兜底；修复回复框被错误跳过导致「点击回复必失败」的根因，发送后校验输入框与会话内容，失败自动保留草稿；CSDN 消息地址修正为 `i.csdn.net/#/msg/index`，小红书改创作平台互动消息
+- **数据采集接入后台真实接口**：按字段族映射粉丝 / 阅读（visit/read/view/play）/ 点赞 / 评论 / 分享，支持万/k 单位换算，自动排除 rate/avg/time 等干扰字段；修复 `visitedCount` 无法识别、创作中心误判未登录
+- **编辑器底层修复**：撤销栈按文章隔离、只在改动前记录快照、撤销恢复光标、输入法组合保护；普通按键（含空格）不再被拦截；保存请求防乱序、发布确认防重复提交
+- **测试**：test-fill 20 + test-exit 6 + test-messages 19 + test-stats 9 + test-editor 全部通过（共 61 项）
+
 ## v1.9.2 更新（内置浏览器 · 不依赖系统 Chrome）
 
 - **登录 / 发布自带浏览器**：一律改用程序内置的 Chromium 内核，不再调用系统 Chrome——没装 Chrome 的电脑也能直接登录和发布，修复了部分用户遇到的「登录启动失败：browserType.launchPersistentContext，Chromium distribution 'chrome' is not found」

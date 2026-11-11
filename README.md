@@ -17,6 +17,13 @@ Freeflow drives **your own accounts** through browser automation. It cracks noth
 
 ---
 
+## v1.9.3 release (message center · stats · editor fixes)
+
+- **Message center rework**: collection now parses the platform's own JSON API responses (session `lastMsg`, Bilibili `account_info/last_msg`, etc.) with DOM + iframe fallback. Fixed the root cause of replies always failing (the reply box was wrongly skipped by the selector filter); sends are verified against the input box and thread, failures keep a draft. CSDN message URL corrected; Xiaohongshu now uses the creator interaction page.
+- **Stats read real backend APIs**: field-family mapping for followers / reads (visit/read/view/play) / likes / comments / shares, with 万/k unit conversion and rate/avg/time fields excluded; fixes `visitedCount` loss and creator-center false "not logged in".
+- **Editor core fixes**: undo history isolated per article, snapshots recorded before changes, caret restored after undo, IME-composition guard; ordinary keys (including Space) are never intercepted; save ordering and publish double-submit guards added.
+- **Tests**: test-fill 20 + test-exit 6 + test-messages 19 + test-stats 9 + test-editor all pass (61 checks).
+
 ## v1.9.2 release (built-in browser · no system Chrome needed)
 
 - **Login & publishing use the built-in browser**: everything now runs on the bundled Chromium core instead of the system Chrome — computers without Chrome installed can log in and publish right away. Fixes the "browserType.launchPersistentContext: Chromium distribution 'chrome' is not found" error some users hit.
