@@ -233,6 +233,10 @@ select { cursor: pointer; }
 .tip-box img { width: 118px; height: auto; border-radius: 8px; display: block; margin: 0 auto 8px; background: #fff; padding: 4px; }
 .tip-box b { color: #f3f4f6; font-size: 12.5px; display: block; }
 .tip-box span { color: #7d8491; font-size: 11px; display: block; margin-top: 3px; line-height: 1.6; }
+.biz-box { background: var(--sidebar-2); border: 1px solid var(--sidebar-line); border-radius: 10px; padding: 10px; margin: 0 8px 12px; text-align: center; display: flex; flex-direction: column; gap: 2px; }
+.biz-box b { color: #f3f4f6; font-size: 12.5px; margin-bottom: 2px; }
+.biz-box a { color: #8ab4f8; font-size: 11px; text-decoration: none; word-break: break-all; }
+.biz-box a:hover { text-decoration: underline; }
 
 /* ---------- 图文/视频切换 ---------- */
 .type-row { display: flex; gap: 6px; padding: 6px 16px 2px; }

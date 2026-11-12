@@ -71,6 +71,7 @@ const EN = {
   '未保存的修改请先保存；进行中的发布任务可稍后在任务页查看。': 'Save unsaved changes first; running publish tasks can be checked later in Task history.',
   '确认退出': 'Quit',
   // 检查更新
+  '商务合作': 'Business inquiries',
   '检查更新': 'Check for updates', '发现新版本': 'New version available',
   '当前 v': 'current v', '（本次更新没有说明）': '(no release notes for this version)',
   '稍后再说': 'Later', '前往下载': 'Download',
