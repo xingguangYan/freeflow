@@ -688,3 +688,19 @@ function editorUrlsFor(platform, article) {
   return platform.editorUrls || [];
 }
 module.exports.editorUrlsFor = editorUrlsFor;
+
+// v1.9.4：为所有平台追加「通用稳定选择器」候选（排在平台专属候选之后，只增不减，向后兼容）。
+// 优先 data-testid / aria-label / role / placeholder，减少对易变 class 的依赖。
+const SAFE_TITLE = ['[data-testid*="title" i] input', 'input[placeholder*="标题"]', 'input[aria-label*="标题"]', '[role="textbox"][aria-label*="标题"]'];
+const SAFE_CONTENT = ['[data-testid*="editor" i] [contenteditable="true"]', '[role="textbox"][contenteditable="true"]', '.ProseMirror', '.ql-editor', '.cm-content', '[contenteditable="true"]', 'textarea[placeholder*="正文"]'];
+const SAFE_PUBLISH = ['button[data-testid*="publish" i]', 'button[aria-label*="发布"]', 'button[aria-label*="发表"]', 'button[aria-label*="publish" i]'];
+const SAFE_COVER = ['input[type="file"][accept*="image"]', 'input[type="file"]'];
+const SAFE_TAG = ['input[placeholder*="标签"]', 'input[aria-label*="标签"]', 'input[placeholder*="tag" i]', '[role="combobox"][aria-label*="标签"]'];
+const uniqSel = arr => [...new Set(arr.filter(Boolean))];
+for (const p of module.exports) {
+  p.titleSelectors = uniqSel([...(p.titleSelectors || []), ...SAFE_TITLE]);
+  p.contentSelectors = uniqSel([...(p.contentSelectors || []), ...SAFE_CONTENT]);
+  p.publishSelectors = uniqSel([...(p.publishSelectors || []), ...SAFE_PUBLISH]);
+  if (!p.noCoverUpload) p.coverSelectors = uniqSel([...(p.coverSelectors || []), p.coverInput, ...SAFE_COVER]);
+  p.tagSelectors = uniqSel([...(p.tagSelectors || []), ...SAFE_TAG]);
+}

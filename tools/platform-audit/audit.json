@@ -1,0 +1,1681 @@
+{
+  "startedAt": "2026-11-12T08:36:09.520Z",
+  "finishedAt": "2026-11-12T08:44:00.344Z",
+  "total": 53,
+  "results": [
+    {
+      "id": "wechat",
+      "name": "微信公众号",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://mp.weixin.qq.com/",
+      "finalUrl": "https://mp.weixin.qq.com/",
+      "httpStatus": 200,
+      "title": "微信公众平台",
+      "loginWall": true,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 2
+      },
+      "shots": [
+        "shots/wechat.jpg"
+      ],
+      "error": "",
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_UNKNOWN_URL_SCHEME",
+        "Failed to load resource: net::ERR_CONNECTION_CLOSED",
+        "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+      ]
+    },
+    {
+      "id": "toutiao",
+      "name": "头条号",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://mp.toutiao.com/profile_v4/graphic/publish?type=news",
+      "finalUrl": "https://mp.toutiao.com/auth/page/login?redirect_url=JTJGcHJvZmlsZV92NCUyRmdyYXBoaWMlMkZwdWJsaXNoJTNGdHlwZSUzRG5ld3M=",
+      "httpStatus": 200,
+      "title": "头条号 - 你创作的，就是头条",
+      "loginWall": true,
+      "captcha": true,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/toutiao.jpg"
+      ],
+      "error": "",
+      "consoleErrors": [
+        "TypeError: Cannot read properties of undefined (reading 'network')\n    at https://lf-content-ecology.toutiaostatic.com/o",
+        "Failed to load resource: the server responded with a status of 404 ()"
+      ]
+    },
+    {
+      "id": "baijia",
+      "name": "百家号",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://baijiahao.baidu.com/builder/rc/edit?type=news",
+      "finalUrl": "https://baijiahao.baidu.com/builder/theme/bjh/login",
+      "httpStatus": 200,
+      "title": "百家号",
+      "loginWall": true,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 1
+      },
+      "shots": [
+        "shots/baijia.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "zhihu",
+      "name": "知乎",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://zhuanlan.zhihu.com/write",
+      "finalUrl": "https://www.zhihu.com/signin?next=http%3A%2F%2Fzhuanlan.zhihu.com%2Fwrite",
+      "httpStatus": 200,
+      "title": "知乎 - 有问题，就会有答案",
+      "loginWall": true,
+      "captcha": true,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/zhihu.jpg"
+      ],
+      "error": "",
+      "consoleErrors": [
+        "Access to XMLHttpRequest at 'https://118.89.204.198/resolv?host=www.zhihu.com&os_type=web' from origin 'https://www.zhih",
+        "Failed to load resource: net::ERR_FAILED"
+      ]
+    },
+    {
+      "id": "xiaohongshu",
+      "name": "小红书",
+      "group": "图文/笔记",
+      "types": [
+        "article",
+        "image"
+      ],
+      "entry": "https://creator.xiaohongshu.com/publish/publish",
+      "finalUrl": "https://creator.xiaohongshu.com/login?source=&redirectReason=401&lastUrl=%252Fpublish%252Fpublish",
+      "httpStatus": 200,
+      "title": "小红书创作服务平台",
+      "loginWall": true,
+      "captcha": true,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 1
+      },
+      "shots": [
+        "shots/xiaohongshu.jpg"
+      ],
+      "error": "",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 401 ()",
+        "Fetch API cannot load chrome-extension://dhjaibcmgocbpegmejfphjhhpaphmkpp/is.js. URL scheme \"chrome-extension\" is not su",
+        "Fetch API cannot load chrome-extension://beeaddblkeeialcohiolkkoiifhgjooj/manifest.json. URL scheme \"chrome-extension\" i"
+      ]
+    },
+    {
+      "id": "bilibili",
+      "name": "B站专栏",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://member.bilibili.com/york/read-editor?not_checkout=1",
+      "finalUrl": "https://member.bilibili.com/york/read-editor?not_checkout=1",
+      "httpStatus": 200,
+      "title": "哔哩哔哩专栏编辑器",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 1,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/bilibili.jpg"
+      ],
+      "error": "",
+      "consoleErrors": [
+        "初始化编辑器失败 Error: 账号未登录\n    at opusInitCheck (https://s1.hdslb.com/bfs/static/sunflower/read-editor/assets/index-iVnxuzkp."
+      ]
+    },
+    {
+      "id": "jianshu",
+      "name": "简书",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://www.jianshu.com/writer/",
+      "finalUrl": "https://www.jianshu.com/sign_in",
+      "httpStatus": 200,
+      "title": "登录 - 简书",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/jianshu.jpg"
+      ],
+      "error": "",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 401 ()",
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ]
+    },
+    {
+      "id": "csdn",
+      "name": "CSDN",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://mp.csdn.net/mp_blog/creation/editor",
+      "finalUrl": "https://mp.csdn.net/mp_blog/creation/editor",
+      "httpStatus": 200,
+      "title": "写文章-CSDN创作中心",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 1,
+        "fileInput": 1,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 1
+      },
+      "shots": [
+        "shots/csdn.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "weibo",
+      "name": "微博",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://weibo.com/ttarticle/publish",
+      "finalUrl": "https://weibo.com/ttarticle/publish",
+      "httpStatus": 200,
+      "title": "",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/weibo.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "sohu",
+      "name": "搜狐号",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://mp.sohu.com/mpfe/v3/main/issue/article",
+      "finalUrl": "https://mp.sohu.com/",
+      "httpStatus": 200,
+      "title": "搜狐号首页",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/sohu.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "wangyi",
+      "name": "网易号",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "http://mp.163.com/index.html#/article-publish/publish",
+      "finalUrl": "https://mp.163.com/login.html?url=http%3A%2F%2Fmp.163.com%2Findex.html%23%2Farticle-publish%2Fpublish#/",
+      "httpStatus": 200,
+      "title": "网易号",
+      "loginWall": true,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 1
+      },
+      "shots": [
+        "shots/wangyi.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "dayu",
+      "name": "大鱼号",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://mp.dayu.com/editor?from=dashboard",
+      "finalUrl": "https://mp.dayu.com/404.html?url=/editor?from=dashboard",
+      "httpStatus": 200,
+      "title": "大鱼号官网",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/dayu.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "yidian",
+      "name": "一点资讯",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://mp.yidianzixun.com/main/article/",
+      "finalUrl": "https://mp.yidianzixun.com/main/article/",
+      "httpStatus": 200,
+      "title": "一点号 - Yidianzixun.com",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/yidian.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "sina",
+      "name": "新浪看点",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://mp.sina.com.cn/newmp/articles/add",
+      "finalUrl": "https://mp.sina.com.cn/?http=fromhttp",
+      "httpStatus": 200,
+      "title": "头条文章",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/sina.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "kuaichuan",
+      "name": "快传号",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://kuaichuan.360.cn/ucweb/article/edit",
+      "finalUrl": "chrome-error://chromewebdata/",
+      "httpStatus": null,
+      "title": "",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/kuaichuan.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "dongfang",
+      "name": "东方号",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://mp.eastday.com/uc/wemedia/article/publish",
+      "finalUrl": "chrome-error://chromewebdata/",
+      "httpStatus": null,
+      "title": "",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/dongfang.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "ifeng",
+      "name": "凤凰号",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://mp.ifeng.com/main/publish",
+      "finalUrl": "https://mp.ifeng.com/main/publish",
+      "httpStatus": 200,
+      "title": "凤凰网",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/ifeng.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "meipian",
+      "name": "美篇",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://www.meipian.cn/html/newarticle/",
+      "finalUrl": "https://www.meipian.cn/html/newarticle/",
+      "httpStatus": 200,
+      "title": "文章未找到",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/meipian.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "chejiahao",
+      "name": "车家号",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://chejiahao.autohome.com.cn/publish",
+      "finalUrl": "https://chejiahao.autohome.com.cn/publish",
+      "httpStatus": 404,
+      "title": "404 Not Found",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/chejiahao.jpg"
+      ],
+      "error": "",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 ()"
+      ]
+    },
+    {
+      "id": "cnblogs",
+      "name": "博客园",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://i.cnblogs.com/posts/edit",
+      "finalUrl": "https://account.cnblogs.com/signin?returnUrl=https:%2F%2Fi.cnblogs.com%2Fposts%2Fedit",
+      "httpStatus": 200,
+      "title": "用户中心 - 博客园",
+      "loginWall": true,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 2,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 5
+      },
+      "shots": [
+        "shots/cnblogs.jpg"
+      ],
+      "error": "",
+      "consoleErrors": [
+        "requestStorageAccess: Permission denied.",
+        "requestStorageAccess: Permission denied.",
+        "requestStorageAccess: Permission denied."
+      ]
+    },
+    {
+      "id": "juejin",
+      "name": "掘金",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://juejin.cn/editor/drafts/new",
+      "finalUrl": "https://juejin.cn/login?to=https%3A%2F%2Fjuejin.cn%2Feditor%2Fdrafts%2Fnew",
+      "httpStatus": 200,
+      "title": "掘金 - 登录",
+      "loginWall": true,
+      "captcha": true,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/juejin.jpg"
+      ],
+      "error": "",
+      "consoleErrors": [
+        "TypeError: Cannot read properties of null (reading 'avatar_large')\n    at o.avatarUrl (https://lf-web-assets.juejin.cn/o"
+      ]
+    },
+    {
+      "id": "segmentfault",
+      "name": "SegmentFault",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://segmentfault.com/write",
+      "finalUrl": "https://segmentfault.com/user/login",
+      "httpStatus": 200,
+      "title": "登录 - SegmentFault 思否",
+      "loginWall": true,
+      "captcha": true,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 1
+      },
+      "shots": [
+        "shots/segmentfault.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "tieba",
+      "name": "百度贴吧",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://tieba.baidu.com/",
+      "finalUrl": "https://tieba.baidu.com/",
+      "httpStatus": 403,
+      "title": "百度安全验证",
+      "loginWall": false,
+      "captcha": true,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/tieba.jpg"
+      ],
+      "error": "",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      ]
+    },
+    {
+      "id": "xueqiu",
+      "name": "雪球",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://xueqiu.com/",
+      "finalUrl": "https://www.xueqiu.com/",
+      "httpStatus": 200,
+      "title": "雪球 - 聪明的投资者都在这里",
+      "loginWall": true,
+      "captcha": true,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/xueqiu.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "douban",
+      "name": "豆瓣",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://www.douban.com/note/create/",
+      "finalUrl": "https://www.douban.com/note/create",
+      "httpStatus": 403,
+      "title": "没有访问权限",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/douban.jpg"
+      ],
+      "error": "",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "id": "douyin",
+      "name": "抖音",
+      "group": "视频",
+      "types": [
+        "video"
+      ],
+      "entry": "https://creator.douyin.com/creator-micro/content/upload?default=1",
+      "finalUrl": "https://creator.douyin.com/creator-micro/content/upload?default=1",
+      "httpStatus": 200,
+      "title": "抖音创作者中心",
+      "loginWall": true,
+      "captcha": true,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 5
+      },
+      "shots": [
+        "shots/douyin.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "kuaishou",
+      "name": "快手",
+      "group": "视频",
+      "types": [
+        "video"
+      ],
+      "entry": "https://cp.kuaishou.com/article/publish/video",
+      "finalUrl": "https://cp.kuaishou.com/article/publish/video",
+      "httpStatus": 200,
+      "title": "快手创作者服务平台",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/kuaishou.jpg"
+      ],
+      "error": "",
+      "consoleErrors": [
+        "Error: 未登录\n    at y.bootstrap (https://p66-plat.wskwai.com/kos/nlav11104/static/ks-cp/js/7565.ccc7dd62.js:1:234943)"
+      ]
+    },
+    {
+      "id": "bilibili_video",
+      "name": "B站视频",
+      "group": "视频",
+      "types": [
+        "video"
+      ],
+      "entry": "https://member.bilibili.com/platform/upload/video/frame",
+      "finalUrl": "https://passport.bilibili.com/login?gourl=https%3A%2F%2Fmember.bilibili.com%2F",
+      "httpStatus": 200,
+      "title": "账号登录",
+      "loginWall": true,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 1
+      },
+      "shots": [
+        "shots/bilibili_video.jpg"
+      ],
+      "error": "",
+      "consoleErrors": [
+        "Error: no auth\n    at https://s1.hdslb.com/bfs/static/studio/creativecenter-platform-next/static/js/async/js/creativecen"
+      ]
+    },
+    {
+      "id": "xigua",
+      "name": "西瓜视频",
+      "group": "视频",
+      "types": [
+        "video"
+      ],
+      "entry": "https://studio.ixigua.com/upload",
+      "finalUrl": "https://creator.douyin.com/",
+      "httpStatus": 200,
+      "title": "抖音创作者中心",
+      "loginWall": true,
+      "captcha": true,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 5
+      },
+      "shots": [
+        "shots/xigua.jpg"
+      ],
+      "error": "",
+      "consoleErrors": [
+        "[sliderView reInit] please check~"
+      ]
+    },
+    {
+      "id": "haokan",
+      "name": "好看视频",
+      "group": "视频",
+      "types": [
+        "video"
+      ],
+      "entry": "https://haokan.baidu.com/videoui/page/pc/ucenter#/upload/video",
+      "finalUrl": "https://haokan.baidu.com/#/upload/video",
+      "httpStatus": 200,
+      "title": "好看视频--轻松有收获",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 6
+      },
+      "shots": [
+        "shots/haokan.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "shipinhao",
+      "name": "微信视频号",
+      "group": "视频",
+      "types": [
+        "video"
+      ],
+      "entry": "https://channels.weixin.qq.com/platform/upload",
+      "finalUrl": "https://channels.weixin.qq.com/login.html",
+      "httpStatus": 200,
+      "title": "视频号助手",
+      "loginWall": true,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 1
+      },
+      "shots": [
+        "shots/shipinhao.jpg"
+      ],
+      "error": "",
+      "consoleErrors": [
+        "Event",
+        "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+        "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+      ]
+    },
+    {
+      "id": "zhihu_video",
+      "name": "知乎视频",
+      "group": "视频",
+      "types": [
+        "video"
+      ],
+      "entry": "https://www.zhihu.com/creator",
+      "finalUrl": "https://www.zhihu.com/signin?next=%2Fcreator",
+      "httpStatus": 200,
+      "title": "知乎 - 有问题，就会有答案",
+      "loginWall": true,
+      "captcha": true,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/zhihu_video.jpg"
+      ],
+      "error": "",
+      "consoleErrors": [
+        "Access to XMLHttpRequest at 'https://118.89.204.198/resolv?host=www.zhihu.com&os_type=web' from origin 'https://www.zhih",
+        "Failed to load resource: net::ERR_FAILED"
+      ]
+    },
+    {
+      "id": "iqiyi",
+      "name": "爱奇艺号",
+      "group": "视频",
+      "types": [
+        "video"
+      ],
+      "entry": "https://mp.iqiyi.com/video/publish",
+      "finalUrl": "https://creator.iqiyi.com/",
+      "httpStatus": 200,
+      "title": "爱奇艺号-爱奇艺创作者运营平台",
+      "loginWall": true,
+      "captcha": true,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/iqiyi.jpg"
+      ],
+      "error": "",
+      "consoleErrors": [
+        "[Vue warn]: Do not use built-in or reserved HTML elements as component id: Mask",
+        "[Vue warn]: Do not use built-in or reserved HTML elements as component id: Image",
+        "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+      ]
+    },
+    {
+      "id": "qie",
+      "name": "企鹅号(腾讯视频)",
+      "group": "视频",
+      "types": [
+        "video"
+      ],
+      "entry": "https://om.qq.com/main/content/publish/video",
+      "finalUrl": "https://om.qq.com/userAuth/index",
+      "httpStatus": 200,
+      "title": "登录-腾讯内容开放平台",
+      "loginWall": true,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 2
+      },
+      "shots": [
+        "shots/qie.jpg"
+      ],
+      "error": "",
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_NAME_NOT_RESOLVED",
+        "Failed to load resource: net::ERR_NAME_NOT_RESOLVED",
+        "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+      ]
+    },
+    {
+      "id": "sohu_video",
+      "name": "搜狐号视频",
+      "group": "视频",
+      "types": [
+        "video"
+      ],
+      "entry": "https://mp.sohu.com/mpfe/v4/main/issue/video",
+      "finalUrl": "https://mp.sohu.com/",
+      "httpStatus": 200,
+      "title": "搜狐号首页",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/sohu_video.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "acfun",
+      "name": "AcFun",
+      "group": "视频",
+      "types": [
+        "video"
+      ],
+      "entry": "https://www.acfun.cn/upload",
+      "finalUrl": "https://www.acfun.cn/upload",
+      "httpStatus": 502,
+      "title": "出错啦！ - AcFun弹幕视频网 - 认真你就输啦 (?ω?)ノ- ( ゜- ゜)つロ",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/acfun.jpg"
+      ],
+      "error": "",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 502 ()",
+        "Access to XMLHttpRequest at 'https://sec-cdn.gifshow.com/safetyid' from origin 'https://www.acfun.cn' has been blocked b",
+        "Failed to load resource: net::ERR_FAILED"
+      ]
+    },
+    {
+      "id": "youku",
+      "name": "优酷",
+      "group": "视频",
+      "types": [
+        "video"
+      ],
+      "entry": "https://creator.youku.com/upload",
+      "finalUrl": "chrome-error://chromewebdata/",
+      "httpStatus": null,
+      "title": "",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/youku.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "weibo_video",
+      "name": "微博视频",
+      "group": "视频",
+      "types": [
+        "video"
+      ],
+      "entry": "https://weibo.com/",
+      "finalUrl": "https://weibo.com/newlogin?tabtype=weibo&gid=102803&openLoginLayer=0&url=https://weibo.com/",
+      "httpStatus": 200,
+      "title": "微博 – 随时随地发现新鲜事",
+      "loginWall": true,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/weibo_video.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "medium",
+      "name": "Medium",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://medium.com/new-story",
+      "finalUrl": "chrome-error://chromewebdata/",
+      "httpStatus": null,
+      "title": "",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/medium.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "devto",
+      "name": "Dev.to",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://dev.to/new",
+      "finalUrl": "https://dev.to/new",
+      "httpStatus": 200,
+      "title": "New Post - DEV Community",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/devto.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "linkedin",
+      "name": "LinkedIn 领英",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://www.linkedin.com/post/new",
+      "finalUrl": "https://www.linkedin.cn/incareer/home",
+      "httpStatus": 451,
+      "title": "",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/linkedin.jpg"
+      ],
+      "error": "",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 451 ()"
+      ]
+    },
+    {
+      "id": "reddit",
+      "name": "Reddit",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://www.reddit.com/submit",
+      "finalUrl": "chrome-error://chromewebdata/",
+      "httpStatus": null,
+      "title": "",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/reddit.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "hashnode",
+      "name": "Hashnode",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://hashnode.com/new/draft",
+      "finalUrl": "https://hashnode.com/new/draft",
+      "httpStatus": 404,
+      "title": "Hashnode",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/hashnode.jpg"
+      ],
+      "error": "",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 ()",
+        "Failed to load resource: the server responded with a status of 429 ()",
+        "Failed to load resource: the server responded with a status of 404 ()"
+      ]
+    },
+    {
+      "id": "substack",
+      "name": "Substack",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://substack.com/publish/post",
+      "finalUrl": "chrome-error://chromewebdata/",
+      "httpStatus": null,
+      "title": "",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/substack.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "tumblr",
+      "name": "Tumblr",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://www.tumblr.com/new/text",
+      "finalUrl": "chrome-error://chromewebdata/",
+      "httpStatus": null,
+      "title": "",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/tumblr.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "pinterest",
+      "name": "Pinterest",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://www.pinterest.com/pin-builder/",
+      "finalUrl": "chrome-error://chromewebdata/",
+      "httpStatus": null,
+      "title": "",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/pinterest.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "x",
+      "name": "X (Twitter)",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://x.com/compose/post",
+      "finalUrl": "about:blank",
+      "httpStatus": null,
+      "title": "Loading https://x.com/compose/post",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/x.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "facebook",
+      "name": "Facebook",
+      "group": "图文",
+      "types": [
+        "article"
+      ],
+      "entry": "https://www.facebook.com/",
+      "finalUrl": "chrome-error://chromewebdata/",
+      "httpStatus": null,
+      "title": "",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/facebook.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "youtube",
+      "name": "YouTube",
+      "group": "视频",
+      "types": [
+        "video"
+      ],
+      "entry": "https://studio.youtube.com/",
+      "finalUrl": "chrome-error://chromewebdata/",
+      "httpStatus": null,
+      "title": "",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/youtube.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "tiktok",
+      "name": "TikTok",
+      "group": "视频",
+      "types": [
+        "video"
+      ],
+      "entry": "https://www.tiktok.com/upload?lang=zh-Hans",
+      "finalUrl": "chrome-error://chromewebdata/",
+      "httpStatus": null,
+      "title": "",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/tiktok.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "vimeo",
+      "name": "Vimeo",
+      "group": "视频",
+      "types": [
+        "video"
+      ],
+      "entry": "https://vimeo.com/upload",
+      "finalUrl": "chrome-error://chromewebdata/",
+      "httpStatus": null,
+      "title": "",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/vimeo.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "dailymotion",
+      "name": "Dailymotion",
+      "group": "视频",
+      "types": [
+        "video"
+      ],
+      "entry": "https://www.dailymotion.com/partner",
+      "finalUrl": "chrome-error://chromewebdata/",
+      "httpStatus": null,
+      "title": "",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/dailymotion.jpg"
+      ],
+      "error": ""
+    },
+    {
+      "id": "instagram",
+      "name": "Instagram",
+      "group": "视频",
+      "types": [
+        "video"
+      ],
+      "entry": "https://www.instagram.com/",
+      "finalUrl": "chrome-error://chromewebdata/",
+      "httpStatus": null,
+      "title": "",
+      "loginWall": false,
+      "captcha": false,
+      "editorSignals": {
+        "contenteditable": 0,
+        "textarea": 0,
+        "fileInput": 0,
+        "titleLike": 0,
+        "proseMirror": 0,
+        "quill": 0,
+        "codeMirror": 0,
+        "tinyMCE": 0,
+        "ueditor": 0,
+        "iframes": 0
+      },
+      "shots": [
+        "shots/instagram.jpg"
+      ],
+      "error": ""
+    }
+  ]
+}
