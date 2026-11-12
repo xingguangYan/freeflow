@@ -46,12 +46,13 @@ jobs:
       - name: Publish release asset
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.9.3
-          name: 自由发 v1.9.3 · Windows + macOS + Android + iOS 四端
+          tag_name: v1.9.4
+          name: 自由发 v1.9.4 · Windows + macOS + Android + iOS 四端
           files: release/freeflow-win64.zip
           body: |
-            自由发 v1.9.3 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
+            自由发 v1.9.4 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
 
+            v1.9.4 更新：53 平台发布入口真实审计——逐平台打开文章/图片/视频编辑入口，记录最终 URL、登录墙、验证码、编辑器指纹（ProseMirror/Quill/CodeMirror/TinyMCE/UEditor/iframe）与截图，产出 PLATFORM_MATRIX.md（18 登录墙 / 2 编辑控件可见 / 1 验证码 / 32 未识别或网络阻断，均如实记录）；侧栏新增「商务合作」mailto 入口；README 精简为最新版本 + 安装使用 + 商务合作，历史版本说明统一在 Releases；platforms.js 追加通用稳定选择器候选（data-testid/aria-label/role/placeholder 优先，向后兼容）。
             v1.9.3 更新：消息中心重构——改为解析平台页面真实接口数据（支持会话 lastMsg / B站 account_info+last_msg 等字段族），修复回复框被错误跳过导致回复必然失败的问题，回复失败自动留草稿；数据采集接入后台接口字段映射（粉丝/阅读/点赞/评论/分享，支持万/k 单位），修复知乎/CSDN/博客园等创作中心识别；编辑器修复撤销栈跨文章串内容、空格输入异常、保存竞态与发布重复提交。
             v1.9.2 更新：内置浏览器——登录 / 发布一律改用程序自带的 Chromium 内核，不再依赖系统 Chrome，修复「没装 Chrome 时报 browserType.launchPersistentContext: Chromium not found」的问题，安装包解压即用；「安装浏览器内核」按钮也改为下载到程序自带目录，从源码运行同样生效。
             v1.9.1 更新：统一消息中心——聚合各平台私信 / 评论 / 系统通知，按平台/类型/未读筛选，可直接回复并同步发送到源平台（发送前显示目标平台和账号，失败自动留草稿可重试，不支持的平台明确提示）；顶栏中英文一键切换；软件内「检查更新」+ 每次启动自动检测 GitHub Release，有新版弹窗展示更新内容；数据采集改走各平台创作数据中心（知乎 / CSDN / B站等 16 个平台）；趋势图支持按平台切换；大模型生成结果预览 / 源码双视图。
@@ -69,6 +70,7 @@ jobs:
             - 统一消息中心（各平台私信 / 评论 / 通知聚合 + 直接回复）
             - 内置浏览器内核，不装系统 Chrome 也能用
             - 消息中心/数据采集改读真实接口，编辑器撤销与空格交互修复
+            - 53 平台真实审计矩阵 + 商务合作入口 + 通用稳定选择器候选
             - 中英文一键切换 + 软件内检查更新
             - 文章搜索、复制、删除；任务重试、删除、清空历史
             - 登录态三重检测，过期自动提示扫码
@@ -116,16 +118,17 @@ jobs:
       - name: Publish macOS assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.9.3
-          name: 自由发 v1.9.3 · Windows + macOS + Android + iOS 四端
+          tag_name: v1.9.4
+          name: 自由发 v1.9.4 · Windows + macOS + Android + iOS 四端
           files: |
             release/freeflow-mac-arm64.zip
             release/freeflow-mac-arm64.dmg
             release/freeflow-mac-x64.zip
             release/freeflow-mac-x64.dmg
           body: |
-            自由发 v1.9.3 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
+            自由发 v1.9.4 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
 
+            v1.9.4 更新：53 平台发布入口真实审计——逐平台打开文章/图片/视频编辑入口，记录最终 URL、登录墙、验证码、编辑器指纹（ProseMirror/Quill/CodeMirror/TinyMCE/UEditor/iframe）与截图，产出 PLATFORM_MATRIX.md（18 登录墙 / 2 编辑控件可见 / 1 验证码 / 32 未识别或网络阻断，均如实记录）；侧栏新增「商务合作」mailto 入口；README 精简为最新版本 + 安装使用 + 商务合作，历史版本说明统一在 Releases；platforms.js 追加通用稳定选择器候选（data-testid/aria-label/role/placeholder 优先，向后兼容）。
             v1.9.3 更新：消息中心重构——改为解析平台页面真实接口数据（支持会话 lastMsg / B站 account_info+last_msg 等字段族），修复回复框被错误跳过导致回复必然失败的问题，回复失败自动留草稿；数据采集接入后台接口字段映射（粉丝/阅读/点赞/评论/分享，支持万/k 单位），修复知乎/CSDN/博客园等创作中心识别；编辑器修复撤销栈跨文章串内容、空格输入异常、保存竞态与发布重复提交。
             v1.9.2 更新：内置浏览器——登录 / 发布一律改用程序自带的 Chromium 内核，不再依赖系统 Chrome，修复「没装 Chrome 时报 browserType.launchPersistentContext: Chromium not found」的问题，安装包解压即用；「安装浏览器内核」按钮也改为下载到程序自带目录，从源码运行同样生效。
             v1.9.1 更新：统一消息中心——聚合各平台私信 / 评论 / 系统通知，按平台/类型/未读筛选，可直接回复并同步发送到源平台（发送前显示目标平台和账号，失败自动留草稿可重试，不支持的平台明确提示）；顶栏中英文一键切换；软件内「检查更新」+ 每次启动自动检测 GitHub Release，有新版弹窗展示更新内容；数据采集改走各平台创作数据中心（知乎 / CSDN / B站等 16 个平台）；趋势图支持按平台切换；大模型生成结果预览 / 源码双视图。
@@ -143,6 +146,7 @@ jobs:
             - 统一消息中心（各平台私信 / 评论 / 通知聚合 + 直接回复）
             - 内置浏览器内核，不装系统 Chrome 也能用
             - 消息中心/数据采集改读真实接口，编辑器撤销与空格交互修复
+            - 53 平台真实审计矩阵 + 商务合作入口 + 通用稳定选择器候选
             - 中英文一键切换 + 软件内检查更新
             - 文章搜索、复制、删除；任务重试、删除、清空历史
             - 登录态三重检测，过期自动提示扫码
@@ -190,12 +194,13 @@ jobs:
       - name: Publish Android asset
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.9.3
-          name: 自由发 v1.9.3 · Windows + macOS + Android + iOS 四端
+          tag_name: v1.9.4
+          name: 自由发 v1.9.4 · Windows + macOS + Android + iOS 四端
           files: freeflow-android.apk
           body: |
-            自由发 v1.9.3 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
+            自由发 v1.9.4 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
 
+            v1.9.4 更新：53 平台发布入口真实审计——逐平台打开文章/图片/视频编辑入口，记录最终 URL、登录墙、验证码、编辑器指纹（ProseMirror/Quill/CodeMirror/TinyMCE/UEditor/iframe）与截图，产出 PLATFORM_MATRIX.md（18 登录墙 / 2 编辑控件可见 / 1 验证码 / 32 未识别或网络阻断，均如实记录）；侧栏新增「商务合作」mailto 入口；README 精简为最新版本 + 安装使用 + 商务合作，历史版本说明统一在 Releases；platforms.js 追加通用稳定选择器候选（data-testid/aria-label/role/placeholder 优先，向后兼容）。
             v1.9.3 更新：消息中心重构——改为解析平台页面真实接口数据（支持会话 lastMsg / B站 account_info+last_msg 等字段族），修复回复框被错误跳过导致回复必然失败的问题，回复失败自动留草稿；数据采集接入后台接口字段映射（粉丝/阅读/点赞/评论/分享，支持万/k 单位），修复知乎/CSDN/博客园等创作中心识别；编辑器修复撤销栈跨文章串内容、空格输入异常、保存竞态与发布重复提交。
             v1.9.2 更新：内置浏览器——登录 / 发布一律改用程序自带的 Chromium 内核，不再依赖系统 Chrome，修复「没装 Chrome 时报 browserType.launchPersistentContext: Chromium not found」的问题，安装包解压即用；「安装浏览器内核」按钮也改为下载到程序自带目录，从源码运行同样生效。
             v1.9.1 更新：统一消息中心——聚合各平台私信 / 评论 / 系统通知，按平台/类型/未读筛选，可直接回复并同步发送到源平台（发送前显示目标平台和账号，失败自动留草稿可重试，不支持的平台明确提示）；顶栏中英文一键切换；软件内「检查更新」+ 每次启动自动检测 GitHub Release，有新版弹窗展示更新内容；数据采集改走各平台创作数据中心（知乎 / CSDN / B站等 16 个平台）；趋势图支持按平台切换；大模型生成结果预览 / 源码双视图。
@@ -213,6 +218,7 @@ jobs:
             - 统一消息中心（各平台私信 / 评论 / 通知聚合 + 直接回复）
             - 内置浏览器内核，不装系统 Chrome 也能用
             - 消息中心/数据采集改读真实接口，编辑器撤销与空格交互修复
+            - 53 平台真实审计矩阵 + 商务合作入口 + 通用稳定选择器候选
             - 中英文一键切换 + 软件内检查更新
             - 文章搜索、复制、删除；任务重试、删除、清空历史
             - 登录态三重检测，过期自动提示扫码
@@ -255,12 +261,13 @@ jobs:
       - name: Publish iOS asset
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.9.3
-          name: 自由发 v1.9.3 · Windows + macOS + Android + iOS 四端
+          tag_name: v1.9.4
+          name: 自由发 v1.9.4 · Windows + macOS + Android + iOS 四端
           files: freeflow-ios.ipa
           body: |
-            自由发 v1.9.3 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
+            自由发 v1.9.4 · 全平台分发工具（Windows + macOS + Android + iOS 四端）
 
+            v1.9.4 更新：53 平台发布入口真实审计——逐平台打开文章/图片/视频编辑入口，记录最终 URL、登录墙、验证码、编辑器指纹（ProseMirror/Quill/CodeMirror/TinyMCE/UEditor/iframe）与截图，产出 PLATFORM_MATRIX.md（18 登录墙 / 2 编辑控件可见 / 1 验证码 / 32 未识别或网络阻断，均如实记录）；侧栏新增「商务合作」mailto 入口；README 精简为最新版本 + 安装使用 + 商务合作，历史版本说明统一在 Releases；platforms.js 追加通用稳定选择器候选（data-testid/aria-label/role/placeholder 优先，向后兼容）。
             v1.9.3 更新：消息中心重构——改为解析平台页面真实接口数据（支持会话 lastMsg / B站 account_info+last_msg 等字段族），修复回复框被错误跳过导致回复必然失败的问题，回复失败自动留草稿；数据采集接入后台接口字段映射（粉丝/阅读/点赞/评论/分享，支持万/k 单位），修复知乎/CSDN/博客园等创作中心识别；编辑器修复撤销栈跨文章串内容、空格输入异常、保存竞态与发布重复提交。
             v1.9.2 更新：内置浏览器——登录 / 发布一律改用程序自带的 Chromium 内核，不再依赖系统 Chrome，修复「没装 Chrome 时报 browserType.launchPersistentContext: Chromium not found」的问题，安装包解压即用；「安装浏览器内核」按钮也改为下载到程序自带目录，从源码运行同样生效。
             v1.9.1 更新：统一消息中心——聚合各平台私信 / 评论 / 系统通知，按平台/类型/未读筛选，可直接回复并同步发送到源平台（发送前显示目标平台和账号，失败自动留草稿可重试，不支持的平台明确提示）；顶栏中英文一键切换；软件内「检查更新」+ 每次启动自动检测 GitHub Release，有新版弹窗展示更新内容；数据采集改走各平台创作数据中心（知乎 / CSDN / B站等 16 个平台）；趋势图支持按平台切换；大模型生成结果预览 / 源码双视图。
@@ -278,6 +285,7 @@ jobs:
             - 统一消息中心（各平台私信 / 评论 / 通知聚合 + 直接回复）
             - 内置浏览器内核，不装系统 Chrome 也能用
             - 消息中心/数据采集改读真实接口，编辑器撤销与空格交互修复
+            - 53 平台真实审计矩阵 + 商务合作入口 + 通用稳定选择器候选
             - 中英文一键切换 + 软件内检查更新
             - 文章搜索、复制、删除；任务重试、删除、清空历史
             - 登录态三重检测，过期自动提示扫码
