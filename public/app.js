@@ -229,8 +229,10 @@ async function saveCurrent(notify = true) {
   if (seq !== saveSeq) return;
   Object.assign(S.current, a);
   $('#editorTitle').textContent = a.title;
-  const li = $$('#articleList li').find(x => x.dataset.id === a.id);
-  if (li) { li.querySelector('.t').textContent = a.title; li.querySelector('.meta').textContent = fmtTime(a.updatedAt) + (a.cover ? ' · 有封面' : '') + (a.mode === 'markdown' ? ' · MD' : ''); }
+  // 用最新状态整体重渲染列表：直接改 .t 的 textContent 会被 i18n 的 data-ff-zh 锚点还原成旧标题
+  renderArticleList();
+  renderPubArticleSelect();
+  updateTopStats();
   if (notify) toast('已保存');
 }
 $('#btnSaveArticle').onclick = () => saveCurrent(true);
