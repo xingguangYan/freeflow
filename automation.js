@@ -17,6 +17,24 @@ try {
 } catch { /* */ }
 const { chromium } = require('playwright');
 const { DATA, MATERIALS } = require('./store');
+const adapters = require('./adapters');
+
+// 平台适配器：独立 adapter 文件优先，缺失时回落 platforms.js 配置
+function adapterOf(platform) { try { return adapters.get(platform && platform.id); } catch { return null; } }
+function sel(platform, key, generic) {
+  const ad = adapterOf(platform);
+  const extra = ad && Array.isArray(ad[key]) ? ad[key] : [];
+  return [...extra, ...((platform && platform[key]) || []), ...(generic || [])];
+}
+function publishTextsOf(platform) {
+  const ad = adapterOf(platform);
+  return [...((ad && ad.publishTexts) || []), ...((platform && platform.publishTexts) || [])];
+}
+function adapterLog(platform) {
+  const ad = adapterOf(platform);
+  const id = (platform && platform.id) || 'unknown';
+  return (...args) => console.log('[adapter:' + id + ']', ...args);
+}
 
 const PROFILES = path.join(DATA, 'profiles');
 fs.mkdirSync(PROFILES, { recursive: true });
@@ -305,8 +323,8 @@ async function waitForEditor(page, platform, timeoutMs = 25000) {
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
     if (page.isClosed && page.isClosed()) return null;
-    const t = await pickVisibleIn(page, [...(platform.titleSelectors || []), ...GENERIC_TITLE]);
-    const c = await pickVisibleIn(page, [...(platform.contentSelectors || []), ...GENERIC_CONTENT]);
+    const t = await pickVisibleIn(page, sel(platform, 'titleSelectors', GENERIC_TITLE));
+    const c = await pickVisibleIn(page, sel(platform, 'contentSelectors', GENERIC_CONTENT));
     if (t || c) return { title: !!t, content: !!c };
     await page.waitForTimeout(1000).catch(() => {});
   }
@@ -341,10 +359,10 @@ async function fillTitle(page, platform, title) {
   const max = platform.titleMax || 0;
   let t = String(title || '');
   if (max && t.length > max) t = t.slice(0, Math.max(1, max - 1)) + '…';
-  const hit = await pickVisibleIn(page, [...(platform.titleSelectors || []), ...GENERIC_TITLE]);
+  const hit = await pickVisibleIn(page, sel(platform, 'titleSelectors', GENERIC_TITLE));
   if (!hit) {
     // 有的平台标题框是隐藏的真实输入框（如 CSDN），直接写值
-    for (const s of [...(platform.titleSelectors || []), ...GENERIC_TITLE]) {
+    for (const s of sel(platform, 'titleSelectors', GENERIC_TITLE)) {
       try {
         const loc = page.locator(s).first();
         if (await loc.count() > 0) {
@@ -380,7 +398,7 @@ async function fillContent(page, platform, html) {
   const head = probe.slice(0, 30), tail = probe.slice(-20);
   // 富文本平台若是 UEditor（CSDN / 公众号），先走官方实例 API，比模拟粘贴可靠得多
   if (!isMd && await ueFill(page, payload, head, tail, probe.length)) return true;
-  const candidates = [...(platform.contentSelectors || []), ...GENERIC_CONTENT];
+  const candidates = sel(platform, 'contentSelectors', GENERIC_CONTENT);
   // 百家号等平台的标题也是可编辑区，通用选择器会先匹配到标题 → 正文候选里排除标题元素
   const hit = await pickVisibleIn(page, candidates, isTitleEl);
   if (!hit) return false;
@@ -544,14 +562,16 @@ async function checkEditorFormatting(page, platform, html) {
 }
 
 async function uploadCover(page, platform, coverPath) {
-  const sel = platform.coverInput || 'input[type="file"]';
+  const candidates = sel(platform, 'coverSelectors', [platform.coverInput || 'input[type="file"]']);
+  for (const s of candidates) {
+    try {
+      // 文件输入框通常是隐藏的，setInputFiles 不需要它可见
+      const loc = page.locator(s).first();
+      if (await loc.count() > 0) { await loc.setInputFiles(coverPath); return true; }
+    } catch { /* 尝试下一个候选 */ }
+  }
   try {
-    // 文件输入框通常是隐藏的，setInputFiles 不需要它可见
-    const loc = page.locator(sel).first();
-    if (await loc.count() > 0) { await loc.setInputFiles(coverPath); return true; }
-  } catch { /* 再试 iframe */ }
-  try {
-    const hit = await pickVisibleIn(page, [sel]);
+    const hit = await pickVisibleIn(page, candidates);
     if (hit) { await hit.loc.setInputFiles(coverPath); return true; }
   } catch { /* 无图位就算了 */ }
   return false;
@@ -596,7 +616,7 @@ async function tryClickButtonText(pageOrDlg, t) {
 }
 async function clickPublish(page, platform) {
   // 1) 平台专属选择器（最精确，不受文案改版影响）
-  for (const s of ((platform && platform.publishSelectors) || [])) {
+  for (const s of sel(platform, 'publishSelectors', [])) {
     try {
       const loc = page.locator(s).first();
       if (await loc.count() > 0 && await loc.isVisible().catch(() => false)) {
@@ -607,7 +627,7 @@ async function clickPublish(page, platform) {
     } catch { /* 继续候选 */ }
   }
   // 2) 文案匹配：顺序很重要，先试更具体的文案，避免误点「发布设置」
-  for (const t of [...((platform && platform.publishTexts) || []), ...DEFAULT_PUBLISH_TEXTS]) {
+  for (const t of [...publishTextsOf(platform), ...DEFAULT_PUBLISH_TEXTS]) {
     const hit = await tryClickButtonText(page, t);
     if (hit) return hit;
   }
@@ -733,7 +753,7 @@ async function fillDesc(page, platform, text) {
 const GENERIC_TAGS = ['input[placeholder*="标签"]', 'input[placeholder*="话题"]', 'input[placeholder*="标签/话题"]'];
 async function fillTags(page, platform, tags) {
   if (!tags) return false;
-  const hit = await pickVisibleIn(page, [...(platform.tagSelectors || []), ...GENERIC_TAGS]);
+  const hit = await pickVisibleIn(page, sel(platform, 'tagSelectors', GENERIC_TAGS));
   if (!hit) return false;
   const { loc } = hit;
   await loc.fill(tags, { timeout: 4000 }).catch(async () => {
@@ -752,5 +772,6 @@ module.exports = {
  waitForPublishSuccess,
  checkEditorFormatting,
   uploadVideo, uploadMedia, fillDesc, fillTags, GENERIC_DESC, GENERIC_TAGS,
-  GENERIC_TITLE, GENERIC_CONTENT
+  GENERIC_TITLE, GENERIC_CONTENT,
+  adapterOf, adapterLog
 };

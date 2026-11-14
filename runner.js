@@ -142,6 +142,14 @@ async function publishToAccount(account, article, coverPath) {
   }
   log('', account.id, filledTitle && filledContent ? 'info' : 'warn',
     `填充结果 标题:${filledTitle ? '成功' : '失败'} 正文:${filledContent ? '成功' : '失败'}（正文约 ${auto.htmlToText(article.content || '').replace(/\s+/g, '').length} 字）`);
+  // 平台适配器钩子：填充后处理弹窗（原创声明/同步等），并输出分步日志
+  const ad = auto.adapterOf(platform);
+  const adlog = auto.adapterLog(platform);
+  if (ad) {
+    adlog('适配器已加载：' + (ad.name || platform.name) + '（标题选择器 ' + ((ad.titleSelectors || []).length) + ' 个 / 正文 ' + ((ad.contentSelectors || []).length) + ' 个）');
+    if (ad.afterFill) { try { await ad.afterFill(cur, adlog); } catch (e) { adlog('afterFill 异常：' + e.message); } }
+    if (ad.handleDialogs) { try { await ad.handleDialogs(cur, adlog); } catch (e) { adlog('弹窗处理异常：' + e.message); } }
+  }
 
   // 半自动平台（如微信）：不点发布，留给用户手动确认
   if (platform.semi) {
@@ -167,6 +175,16 @@ async function publishToAccount(account, article, coverPath) {
       return { status: 'manual', message: '排版异常：' + fmt.issues.join('；') + '（窗口已保留，请检查后手动发布）', keepCtx: ctx, page: cur };
     }
     if (fmt.issues.length) log('', account.id, 'warn', '排版提醒：' + fmt.issues.join('；'));
+  }
+
+  // 发布前必填项检查（适配器声明）：封面/标题/正文未就绪时不盲目提交
+  if (ad && ad.preflight) {
+    const pre = await ad.preflight(cur, adlog).catch(e => ({ ok: false, issues: [e.message] }));
+    if (!pre.ok) {
+      log('', account.id, 'error', '发布前检查未通过：' + pre.issues.join('；'));
+      return { status: 'manual', message: '发布前检查未通过：' + pre.issues.join('；') + '（窗口已保留，请补全后手动发布）', keepCtx: ctx, page: cur };
+    }
+    adlog('发布前检查通过（标题/正文/必填项就绪）');
   }
 
   await cur.waitForTimeout(1500);
