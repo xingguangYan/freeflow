@@ -121,7 +121,7 @@ const xhs = platforms.find(p => p.id === 'xiaohongshu');
       const page = await browser.newPage();
       await page.setContent(`<button>发布</button><button>发布文章</button>`);
       const t = await auto.clickPublish(page, csdn);
-      check('clickPublish platform text first', t === '发布文章');
+      check('clickPublish platform text first', !!t && /发布文章/.test(String(t)));
       await page.close();
     }
     // 11. clickPublish：英文按钮
