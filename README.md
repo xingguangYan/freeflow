@@ -32,7 +32,7 @@ Freeflow drives **your own accounts** through browser automation. It cracks noth
 
 - **Fully local**: no cloud backend; login states and content stay on your machine
 - **Operates your own accounts**: publishes by automating each platform's own web editor; nothing is cracked
-- **53 platforms**: 38 Chinese + 15 overseas
+- **59 platforms**: 44 Chinese + 15 overseas (incl. Huawei Cloud / Tencent Cloud / Aliyun / 51CTO / OSChina / InfoQ developer blogs)
 - **Built-in browser core**: no system Chrome required — unzip and run
 - **Three-tier fallback**: platform selectors → generic heuristics → clipboard manual mode, always with an explicit failure message
 - **Free & open source**: MIT license
@@ -41,7 +41,7 @@ Freeflow drives **your own accounts** through browser automation. It cracks noth
 
 ## Platform coverage
 
-- **Chinese article (24)**: WeChat Official Account, Toutiao, Baijiahao, Zhihu, Xiaohongshu, Bilibili Columns, Jianshu, CSDN, Weibo, Sohu, NetEase, Dayuhao, Yidian, Sina Kandian, Kuaichuan, Dongfang, Phoenix, Meipian, Autohome, CNBlogs, Juejin, SegmentFault, Baidu Tieba, Xueqiu, Douban
+- **Chinese article (30)**: WeChat Official Account, Toutiao, Baijiahao, Zhihu, Xiaohongshu, Bilibili Columns, Jianshu, CSDN, Weibo, Sohu, NetEase, Dayuhao, Yidian, Sina Kandian, Kuaichuan, Dongfang, Phoenix, Meipian, Autohome, CNBlogs, Juejin, SegmentFault, Baidu Tieba, Xueqiu, Douban, Huawei Cloud Dev, Tencent Cloud Dev, Aliyun Dev, 51CTO, OSChina, InfoQ
 - **Chinese video (13)**: Douyin, Kuaishou, Bilibili Video, Xigua, Haokan, WeChat Channels, Zhihu Video, iQIYI, Penguin, Sohu Video, AcFun, Youku, Weibo Video
 - **Overseas (15)**: Medium, Dev.to, LinkedIn, Reddit, Hashnode, Substack, Tumblr, Pinterest, X, Facebook, YouTube, TikTok, Vimeo, Dailymotion, Instagram
 
