@@ -689,6 +689,88 @@ function editorUrlsFor(platform, article) {
 }
 module.exports.editorUrlsFor = editorUrlsFor;
 
+// ==================== 开发者/技术博客平台（v1.9.5 新增，实验性） ====================
+module.exports.push(
+  {
+    id: 'huaweicloud', name: '华为云开发者联盟', region: 'cn', group: '图文', color: '#cf0a2c',
+    titleMax: 100, experimental: true,
+    loginUrl: 'https://bbs.huaweicloud.com/',
+    loggedInUrl: /bbs\.huaweicloud\.com\/(blogs|usercenter)/,
+    loginCookies: ['hwssotoken', 'HWWAFSESID'],
+    editorUrls: ['https://bbs.huaweicloud.com/blogs/editor', 'https://bbs.huaweicloud.com/'],
+    titleSelectors: ['input[placeholder*="标题"]', 'textarea[placeholder*="标题"]', 'input[name="title"]'],
+    contentSelectors: ['[contenteditable="true"]', '.ql-editor', '.ProseMirror', '.CodeMirror', 'textarea'],
+    publishTexts: ['发布', '提交'],
+    contentType: 'richtext', noCoverUpload: false,
+    note: '华为云博客入口与编辑器需登录后二次验证（实验性）。'
+  },
+  {
+    id: 'tencentcloud', name: '腾讯云开发者社区', region: 'cn', group: '图文', color: '#0052d9',
+    titleMax: 100,
+    loginUrl: 'https://cloud.tencent.com/developer',
+    loggedInUrl: /cloud\.tencent\.com\/developer/,
+    loginCookies: ['qcloud_uin', 'skey'],
+    editorUrls: ['https://cloud.tencent.com/developer/article/write', 'https://cloud.tencent.com/developer'],
+    titleSelectors: ['input[placeholder*="标题"]', 'textarea[placeholder*="标题"]', 'input[name="title"]'],
+    contentSelectors: ['.ProseMirror', '.ql-editor', '.CodeMirror', '[contenteditable="true"]', 'textarea'],
+    publishTexts: ['发布', '提交'],
+    contentType: 'richtext', noCoverUpload: false,
+    note: '腾讯云开发者社区文章编辑器。'
+  },
+  {
+    id: 'aliyun', name: '阿里云开发者社区', region: 'cn', group: '图文', color: '#ff6a00',
+    titleMax: 100,
+    loginUrl: 'https://developer.aliyun.com/',
+    loggedInUrl: /developer\.aliyun\.com/,
+    loginCookies: ['login_aliyunid', 'aliyun_site'],
+    editorUrls: ['https://developer.aliyun.com/article/new', 'https://developer.aliyun.com/'],
+    titleSelectors: ['input[placeholder*="标题"]', 'textarea[placeholder*="标题"]', 'input[name="title"]'],
+    contentSelectors: ['.ProseMirror', '.ql-editor', '.CodeMirror', '[contenteditable="true"]', 'textarea'],
+    publishTexts: ['发布', '提交'],
+    contentType: 'richtext', noCoverUpload: false,
+    note: '阿里云开发者社区文章编辑器。'
+  },
+  {
+    id: 'c51cto', name: '51CTO博客', region: 'cn', group: '图文', color: '#c8102e',
+    titleMax: 100,
+    loginUrl: 'https://blog.51cto.com/',
+    loggedInUrl: /blog\.51cto\.com/,
+    loginCookies: ['_51cto_sso', '51cto_sso'],
+    editorUrls: ['https://blog.51cto.com/blogger/publish', 'https://blog.51cto.com/'],
+    titleSelectors: ['input[placeholder*="标题"]', 'textarea[placeholder*="标题"]', 'input[name="title"]'],
+    contentSelectors: ['.CodeMirror', '.cm-content', '.ProseMirror', '[contenteditable="true"]', 'textarea'],
+    publishTexts: ['发布', '发表'],
+    contentType: 'richtext', noCoverUpload: false,
+    note: '51CTO 博客发布页。'
+  },
+  {
+    id: 'oschina', name: '开源中国', region: 'cn', group: '图文', color: '#3c9c2b',
+    titleMax: 100,
+    loginUrl: 'https://my.oschina.net/',
+    loggedInUrl: /my\.oschina\.net/,
+    loginCookies: ['oscid', 'oschina_user'],
+    editorUrls: ['https://my.oschina.net/blog/write', 'https://my.oschina.net/'],
+    titleSelectors: ['input[placeholder*="标题"]', 'textarea[placeholder*="标题"]', 'input[name="title"]'],
+    contentSelectors: ['.CodeMirror', '.cm-content', '.ProseMirror', '[contenteditable="true"]', 'textarea'],
+    publishTexts: ['发布', '提交'],
+    contentType: 'richtext', noCoverUpload: false,
+    note: '开源中国博客编辑器。'
+  },
+  {
+    id: 'infoq', name: 'InfoQ', region: 'cn', group: '图文', color: '#0f2b46',
+    titleMax: 100, experimental: true,
+    loginUrl: 'https://www.infoq.cn/',
+    loggedInUrl: /infoq\.cn/,
+    loginCookies: ['infoq_user', 'session'],
+    editorUrls: ['https://www.infoq.cn/profile/write', 'https://www.infoq.cn/'],
+    titleSelectors: ['input[placeholder*="标题"]', 'textarea[placeholder*="标题"]', 'input[name="title"]'],
+    contentSelectors: ['.ProseMirror', '.ql-editor', '.CodeMirror', '[contenteditable="true"]', 'textarea'],
+    publishTexts: ['发布', '提交'],
+    contentType: 'richtext', noCoverUpload: false,
+    note: 'InfoQ 写作平台仅对认证作者开放（实验性）。'
+  }
+);
+
 // v1.9.4：为所有平台追加「通用稳定选择器」候选（排在平台专属候选之后，只增不减，向后兼容）。
 // 优先 data-testid / aria-label / role / placeholder，减少对易变 class 的依赖。
 const SAFE_TITLE = ['[data-testid*="title" i] input', 'input[placeholder*="标题"]', 'input[aria-label*="标题"]', '[role="textbox"][aria-label*="标题"]'];
