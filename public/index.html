@@ -87,7 +87,8 @@
     <section id="view-articles" class="view active">
       <div class="split">
         <div class="panel list-panel">
-          <div class="panel-head"><strong>文章列表</strong><button class="btn primary small" id="btnNewArticle">+ 新建</button></div>
+          <div class="panel-head"><strong>内容库</strong><button class="btn primary small" id="btnNewArticle">+ 新建</button></div>
+          <div class="ct-tabs" id="artTabs"><button data-ct="article" class="active">图文</button><button data-ct="video">视频</button><button data-ct="audio">音频</button></div>
           <div class="search-row"><input id="artSearch" placeholder="搜索标题…"></div>
           <ul id="articleList" class="item-list"></ul>
         </div>
@@ -195,6 +196,7 @@
     </section>
 
     <section id="view-accounts" class="view">
+      <div class="ct-tabs" id="accTabs"><button data-ct="article" class="active">图文</button><button data-ct="video">视频</button><button data-ct="audio">音频</button></div>
       <div class="panel">
         <div class="panel-head"><strong>添加账号</strong><span class="muted">每个账号一个独立浏览器配置，登录后自动保存在本机</span></div>
         <div class="add-form">
@@ -213,7 +215,8 @@
       <div class="split">
         <div class="panel">
           <div class="panel-head"><strong>发布设置</strong></div>
-          <div class="form-row"><label>文章</label><select id="pubArticle"></select></div>
+          <div class="ct-tabs" id="pubTabs"><button data-ct="article" class="active">图文</button><button data-ct="video">视频</button><button data-ct="audio">音频</button></div>
+          <div class="form-row"><label>内容</label><select id="pubArticle"></select></div>
           <div class="form-row"><label>模式</label><div id="pubModeHint" class="muted"></div></div>
           <div class="form-row"><label>账号</label><div id="pubAccounts" class="pub-accounts"></div><button class="btn small" id="btnPubAll" title="勾选/取消全部平台账号">全选</button><button class="btn small" id="btnCheckAllLogin" title="打开浏览器逐个检查勾选账号的登录态，不要求重新扫码">一键检测登录</button></div>
           <div class="form-row"><label>定时</label><input type="datetime-local" id="pubSchedule"> <span class="muted">想定时才选时间，不选直接立即发布</span></div>

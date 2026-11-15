@@ -19,3 +19,4 @@ android/local.properties
 *.keystore.properties
 freeflow.keystore
 check.apk
+.test-data-real/

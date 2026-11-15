@@ -1,5 +1,5 @@
 // Electron 主进程：拉起本地服务并装入独立程序窗口。
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, shell, Menu } = require('electron');
 const { ipcMain } = require('electron');
 const { fork } = require('child_process');
 const path = require('path');
@@ -87,6 +87,18 @@ function boot() {
      webPreferences: { contextIsolation: true, preload: path.join(__dirname, 'preload.js') }
     });
     win.loadURL('http://127.0.0.1:' + PORT);
+    // Electron 默认没有网页右键菜单：注册原生编辑菜单，恢复复制/粘贴/剪切/全选
+    win.webContents.on('context-menu', (event, params) => {
+      const flags = params.editFlags || {};
+      const menu = Menu.buildFromTemplate([
+        { role: 'cut', label: '剪切', enabled: !!flags.canCut },
+        { role: 'copy', label: '复制', enabled: !!flags.canCopy },
+        { role: 'paste', label: '粘贴', enabled: !!flags.canPaste },
+        { type: 'separator' },
+        { role: 'selectAll', label: '全选', enabled: !!flags.canSelectAll }
+      ]);
+      menu.popup({ window: win });
+    });
     // 关闭窗口（点 X / Alt+F4 / Cmd+Q）先问一次，确认才退出
     win.on('close', e => {
       if (quitting) return;

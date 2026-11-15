@@ -119,7 +119,8 @@ async function loadArticles() {
   renderArticleList(); renderPubArticleSelect(); updateTopStats();
 }
 function renderArticleList() {
-  const list = S.search ? S.articles.filter(a => (a.title || '').toLowerCase().includes(S.search.toLowerCase())) : S.articles;
+  let list = S.articles.filter(a => (a.type || 'article') === CT.art);
+  if (S.search) list = list.filter(a => (a.title || '').toLowerCase().includes(S.search.toLowerCase()));
   if (!list.length) {
     $('#articleList').innerHTML = '<div class="empty">还没有文章<br>点右上「+ 新建」开始第一篇</div>';
     return;
@@ -193,7 +194,7 @@ $('#artCover').addEventListener('change', () => {
   if (S.current) { S.current.cover = $('#artCover').value || null; saveCurrent(false); renderCoverSelect(); }
 });
 $('#btnNewArticle').onclick = async () => {
-  const a = await api('/api/articles', { method: 'POST', body: JSON.stringify({ title: '未命名文章' }) });
+  const a = await api('/api/articles', { method: 'POST', body: JSON.stringify({ title: '未命名文章', type: CT.art }) });
   S.articles.push(a); renderArticleList(); await selectArticle(a.id); updateTopStats(); toast('已新建文章');
 };
 let saveSeq = 0;
@@ -525,16 +526,17 @@ function setVideo(v) {
   S.current.videoFile = v.file; S.current.videoPath = null; S.current.videoName = v.name;
   $('#videoStatus').textContent = '已选视频：' + v.name;
 }
-$('#artVideoFile').addEventListener('change', e => {
+$('#artVideoFile').addEventListener('change', async e => {
   const f = e.target.files[0];
   if (!f) return;
   if (!S.current) return toast('先新建或选择一篇文章');
-  const rd = new FileReader();
-  rd.onload = async () => {
-    const v = await api('/api/videos', { method: 'POST', body: JSON.stringify({ name: f.name, base64: rd.result }) });
+  try {
+    toast('上传中…' + (f.size / 1048576).toFixed(1) + 'MB');
+    const v = await api('/api/videos/upload?name=' + encodeURIComponent(f.name), {
+      method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: f
+    });
     setVideo(v); toast('视频已上传入库');
-  };
-  rd.readAsDataURL(f);
+  } catch (err) { toast('视频上传失败：' + err.message); }
 });
 $('#btnUsePath').onclick = async () => {
   const p = $('#artVideoPath').value.trim();
@@ -551,16 +553,16 @@ function setAudio(v) {
   S.current.audioFile = v.file; S.current.audioPath = null; S.current.audioName = v.name;
   $('#audioStatus').textContent = '已选音频：' + v.name;
 }
-$('#artAudioFile').addEventListener('change', e => {
+$('#artAudioFile').addEventListener('change', async e => {
   const f = e.target.files[0];
   if (!f) return;
   if (!S.current) return toast('先新建或选择一篇文章');
-  const rd = new FileReader();
-  rd.onload = async () => {
-    const v = await api('/api/audios', { method: 'POST', body: JSON.stringify({ name: f.name, base64: rd.result }) });
+  try {
+    const v = await api('/api/audios/upload?name=' + encodeURIComponent(f.name), {
+      method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: f
+    });
     setAudio(v); toast('音频已上传入库');
-  };
-  rd.readAsDataURL(f);
+  } catch (err) { toast('音频上传失败：' + err.message); }
 });
 $('#btnUseAudioPath').onclick = async () => {
   const p = $('#artAudioPath').value.trim();
@@ -582,7 +584,7 @@ function renderAccounts() {
     $('#accountGrid').innerHTML = '<div class="empty">还没有账号<br>用上方表单添加第一个平台账号</div>';
     return;
   }
-  $('#accountGrid').innerHTML = S.accounts.map(a => {
+  $('#accountGrid').innerHTML = S.accounts.filter(a => platformSupports(platOf(a.platformId), CT.acc)).map(a => {
     const p = platOf(a.platformId);
     return `
     <div class="acc-card">
@@ -645,6 +647,9 @@ async function checkLogin(accId) {
     toast(r.loggedIn ? `${platName(acc.platformId)} 已登录` : `${platName(acc.platformId)} 未登录，请点「登录」扫码`);
   } catch (e) { toast('检测失败: ' + e.message); }
 }
+bindCtTabs('artTabs', 'art', () => { renderArticleList(); });
+bindCtTabs('pubTabs', 'pub', () => { renderPubArticleSelect(); renderPubAccounts(); });
+bindCtTabs('accTabs', 'acc', () => { renderAccounts(); });
 $('#btnAddAccount').onclick = async () => {
   const platformId = $('#newAccPlatform').value;
   const name = $('#newAccName').value.trim() || undefined;
@@ -670,7 +675,10 @@ $('#btnInstallBrowser').onclick = async () => {
 // ---------- 发布 ----------
 function renderPubArticleSelect() {
   const sel = $('#pubArticle'); if (!sel) return;
-  sel.innerHTML = S.articles.map(a => `<option value="${a.id}">${esc(a.title)}${a.type === 'video' ? '（视频）' : a.type === 'audio' ? '（音频）' : ''}</option>`).join('') || '<option value="">（没有文章）</option>';
+  const cur = sel.value;
+  const list = S.articles.filter(a => (a.type || 'article') === CT.pub);
+  sel.innerHTML = list.map(a => `<option value="${a.id}">${esc(a.title)}${a.type === 'video' ? '（视频）' : a.type === 'audio' ? '（音频）' : ''}</option>`).join('') || '<option value="">（没有内容）</option>';
+  if (list.some(a => a.id === cur)) sel.value = cur;
 }
 function renderPubAccounts() {
   const el = $('#pubAccounts'); if (!el) return;
@@ -832,6 +840,24 @@ function startTaskPoll() {
 $('#btnRefreshTasks').onclick = renderTasks;
 // ---------- 消息中心 ----------
 let MSG = { snaps: {}, drafts: {}, filter: { platform: '', type: '', unread: false } };
+// 内容类型 Tab：内容库 / 一键发布 / 账号三大模块各自独立
+const CT = { art: 'article', pub: 'article', acc: 'article' };
+function platformSupports(platform, type) {
+  if (!platform) return false;
+  if (type === 'video') return platform.mode === 'video' || platform.mode === 'both';
+  if (type === 'audio') return !!platform.audio;
+  return platform.mode !== 'video';
+}
+function bindCtTabs(id, key, rerender) {
+  const box = document.getElementById(id);
+  if (!box) return;
+  box.addEventListener('click', e => {
+    const b = e.target.closest('button[data-ct]'); if (!b) return;
+    CT[key] = b.dataset.ct;
+    [...box.querySelectorAll('button')].forEach(x => x.classList.toggle('active', x === b));
+    rerender();
+  });
+}
 let MSG_REPLY = null; // {accountId, platformId, platformName, accountName, from}
 async function loadMessages() {
   const [snaps, drafts] = await Promise.all([
