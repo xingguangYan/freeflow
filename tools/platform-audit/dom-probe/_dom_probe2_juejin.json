@@ -1,0 +1,20 @@
+{
+  "bytemd": "<div class=\"bytemd bytemd-split\"><div class=\"bytemd-toolbar\"><div class=\"bytemd-toolbar-left\"><div class=\"bytemd-toolbar-icon bytemd-tippy\" bytemd-tippy-path=\"0\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1em\" height=\"1em\" fill=\"none\" viewBox=\"0 0 48 48\"><path stroke=\"currentColor\" stroke-lineca",
+  "textareas": [
+    {
+      "html": "<textarea maxlength=\"100\" rows=\"5\" placeholder=\"\" autocomplete=\"\" name=\"\" aria-label=\"\" spellcheck=\"false\" class=\"byte-input__textarea\"></textarea>",
+      "visible": false
+    },
+    {
+      "html": "<textarea autocorrect=\"off\" autocapitalize=\"off\" spellcheck=\"false\" tabindex=\"0\" style=\"position: absolute; bottom: -1em; padding: 0px; width: 1000px; height: 1em; min-height: 1em; outline: none;\"></textarea>",
+      "visible": true
+    },
+    {
+      "html": "<textarea rows=\"2\" placeholder=\"目前仅支持审核通过的西瓜视频链接\" autocomplete=\"\" name=\"\" aria-label=\"\" spellcheck=\"false\" class=\"byte-input__textarea\"></textarea>",
+      "visible": false
+    }
+  ],
+  "contenteditables": [],
+  "feditor": null,
+  "feditorChildren": []
+}

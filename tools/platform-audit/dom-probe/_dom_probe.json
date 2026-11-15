@@ -1,0 +1,1650 @@
+[
+  {
+    "platformId": "csdn",
+    "account": "此星光明",
+    "status": 200,
+    "url": "https://mp.csdn.net/mp_blog/creation/editor",
+    "title": "写文章-CSDN创作中心",
+    "bodyText": "消息\n发布文章\nCSDN同步助手\n草稿\n\norca:24 小时涨星 7,883 的 AI 技能项目\n\n继续编辑\n更多草稿\n 还需输入5个字\n \n撤消\n \n重做\n历史\n格式\n \n加粗\n \n颜色\n \n背景\n其他\n列表\n对齐\n \n水平线\n \n块引用\n代码\n \n资源绑定\n \n表格\n \n图像\n \n视频\n \n公式\n \n链接\n \n模版\n \n目录\n \n宽屏\n \n使用 MD 编辑器\n文章标签*\n添加文章标签\n添加封面 \n\n从本地上传\n\n暂无内容图片，请在正文中添加图片\n\n文章摘要 \n0 / 256\nAI提取摘要\n分类专栏 \n新建分类专栏\n文章类型 \n原创\n转载\n翻译\n创作声明\n无声明\n文章备份\n同时备份到GitCode\n\n您已同意GitCode 用户协议 和 隐私政策，我们会为您自动创建账号并备份文章至我的项目。\n\n可见范围 \n全部可见\n仅我可见\n粉丝可见\nVIP可见\n文章模板\n默认模板\n简洁模板\n墨衍模板\n多平台发布\n否\n是\n\n参与活动\n/话题\n\n活动\n请选择创作活动\n话题\n请选择创作话题\n共 0 字\n发文设置\ni\n今日发文额度还有\n9\n篇，\n可去这里提升额度\n双11 · 限时礼遇\n墨衍\n领券开会员\n保存草稿\n定时发布\n发布博客\n\n目录\n\n为文内增加标题，这里将生成目录\n\nAI助手\n大纲生成\n代码生成\n学术搜索\n反馈\n反馈已提交，感谢你的帮助。",
+    "inputs": [
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "password",
+        "cls": "",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "toolbar-search-input",
+        "name": "",
+        "ph": "freellmapi部署",
+        "aria": "",
+        "role": "",
+        "type": "text",
+        "cls": "",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "textarea",
+        "id": "txtTitle",
+        "name": "",
+        "ph": "请输入文章标题（5～100个字）",
+        "aria": "",
+        "role": "",
+        "type": "",
+        "cls": "el_mcm-textarea__inner",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "hidden",
+        "cls": "",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "textarea",
+        "id": "txtSammary",
+        "name": "",
+        "ph": "本内容会在各展现列表中展示，帮助读者快速了解内容。若不填，则默认提取正文前256个字。",
+        "aria": "",
+        "role": "",
+        "type": "",
+        "cls": "",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "el_mcm-id-266-59",
+        "name": "",
+        "ph": "请输入文字搜索，Enter键入可添加自定义标签",
+        "aria": "",
+        "role": "textbox",
+        "type": "text",
+        "cls": "el_mcm-input__inner",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "tags",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "hidden",
+        "cls": "",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "file",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "file",
+        "cls": "el_mcm-upload__input",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "textarea",
+        "id": "el_mcm-id-266-60",
+        "name": "",
+        "ph": "摘要：会在推荐、列表等场景外露，帮助读者快速了解内容，支持一键将正文前 256 字符键入摘要文本框",
+        "aria": "",
+        "role": "",
+        "type": "",
+        "cls": "el_mcm-textarea__inner",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "categories",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "hidden",
+        "cls": "",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "categories",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "hidden",
+        "cls": "",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "tag__option-chk",
+        "visible": false,
+        "text": ""
+      }
+    ],
+    "iframes": [
+      {
+        "id": "",
+        "cls": "cke_wysiwyg_frame cke_reset",
+        "src": "https://mp.csdn.net/mp_blog/creation/editor"
+      },
+      {
+        "id": "",
+        "cls": "",
+        "src": "https://app-blog.csdn.net/csdn/aiChatNew?agent=1&editorType=rich&switch-mr=40"
+      }
+    ],
+    "buttons": [
+      {
+        "tag": "button",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "button",
+        "cls": "upload-img-box",
+        "visible": true,
+        "text": "从本地上传"
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "button",
+        "cls": "el_mcm-button el_mcm-button--primary is-round btn-outline-secondary el_mcm-tooltip__trigge",
+        "visible": true,
+        "text": "保存草稿"
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "button",
+        "cls": "el_mcm-button el_mcm-button--primary is-round btn-outline-secondary ml16",
+        "visible": true,
+        "text": "定时发布"
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "button",
+        "cls": "el_mcm-button el_mcm-button--primary is-round btn-outline-danger ml16",
+        "visible": true,
+        "text": "发布博客"
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "button",
+        "cls": "cfw-upload-tile",
+        "visible": false,
+        "text": "点击上传"
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "submit",
+        "cls": "cfw-primary-btn",
+        "visible": false,
+        "text": "提交反馈"
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "button",
+        "cls": "el_mcm-button is-link btn-draft-preview",
+        "visible": false,
+        "text": "保存并预览"
+      }
+    ],
+    "fileInputs": [
+      {
+        "accept": ".png,.jpg,.jpeg,.gif",
+        "id": "",
+        "name": "file",
+        "cls": "el_mcm-upload__input",
+        "visible": false
+      },
+      {
+        "accept": ".png,.jpg,.jpeg,.gif,.webp,.bmp,image/*",
+        "id": "",
+        "name": "",
+        "cls": "cfw-file-input",
+        "visible": false
+      }
+    ],
+    "frameworks": {
+      "prosemirror": 0,
+      "quill": 0,
+      "codemirror": 0,
+      "ueditor": 0,
+      "bytemd": 0
+    }
+  },
+  {
+    "platformId": "cnblogs",
+    "account": "此星光明",
+    "status": 200,
+    "url": "https://i.cnblogs.com/posts/edit",
+    "title": "博客后台 - 博客园",
+    "bodyText": "« 首页动态新闻博问闪存搜索会员\n此星光明 · 博客 · 消息 · 设置 · 退出\ncxgm\n博客后台\n新建随笔\n随笔模板\n导入文档\n草稿箱\n回收站\n博客签名\n图片库\n备份/导出\n设置编辑器\nVSCode插件\n分类\n \n新建分类\n \n分类列表\n \n[未分类]\n随笔\n文章\n日记\n评论\n标签\n合集\n链接\n相册\n文件\n设置\n选项\n添加随笔\n标题\n内容（AI生成的内容需注明，禁止发布虚假信息、AI数据投毒、GEO排名类的内容，请遵守社区规范）\n编辑器: TinyMCE\n自动备份\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n格式\n\t\n\t\n字体\n\t\n\t\n字体大小\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\n\n\n\n元素路径:\n升级成为VIP会员\n提取图片\n个人分类 \n请选择个人分类\n合集\n没有合集可供选择， 新建合集\n投稿选项\n投稿至首页候选区\n投稿至博客园首页(原创精品)\n声明选项\n内容由AI生成\n网站分类\n.NET技术：\n.NET新手区\nASP.NET\nC#\n.NET Core\nWinForm\nSilverlight\nWCF\nCLR\nWPF\nXNA\nVisual Studio\nASP.NET MVC\n控件开发\nEntity Framework\nNHibernate\nWinRT/Metro\nUWP\n后端开发：\nJava\nPython\nGo\nPHP\nC++\nRuby\nSwift\nC语言\nErlang\nPascal/Delphi\nScala\nR语言\nVerilog\nDart\nRust\n其他语言\n软件设计：\n架构设计\n面向对象\n设计模式\n领域驱动设计\n前端开发：\nHtml/Css\nJava",
+    "inputs": [
+      {
+        "tag": "input",
+        "id": "post-title",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "text",
+        "cls": "field__control field__control--title form-control cnb-input ng-untouched ng-pristine ng-in",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "textarea",
+        "id": "Editor_Edit_EditorBody",
+        "name": "Editor_Edit_EditorBody",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "",
+        "cls": "ng-tns-c3374524571-13",
+        "visible": false,
+        "text": "编辑器加载中..."
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "",
+        "cls": "ant-select-selection-search-input ng-untouched ng-pristine ng-valid",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "site-publish-candidate",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "ng-untouched ng-pristine ng-valid",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "site-publish-site-home",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "ng-untouched ng-pristine ng-valid",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "post-is-aigc",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "ng-untouched ng-pristine ng-valid",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": ".NET新手区",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "ASP.NET",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "C#",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": ".NET Core",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "WinForm",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "Silverlight",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "WCF",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "CLR",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "WPF",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "XNA",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "Visual Studio",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "ASP.NET MVC",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "控件开发",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "Entity Framework",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "NHibernate",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "WinRT/Metro",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "UWP",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "Java",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "Python",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "Go",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "PHP",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "C++",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "Ruby",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "Swift",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "C语言",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "Erlang",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "Pascal/Delphi",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "Scala",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "R语言",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "Verilog",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "Dart",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "Rust",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "其他语言",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "架构设计",
+        "name": "site-cate-selector",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      }
+    ],
+    "iframes": [
+      {
+        "id": "Editor_Edit_EditorBody_ifr",
+        "cls": "",
+        "src": "javascript:\"\""
+      }
+    ],
+    "buttons": [
+      {
+        "tag": "button",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "",
+        "cls": "cnb-button d-inline-flex align-items-center ng-star-inserted",
+        "visible": true,
+        "text": "发布"
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "",
+        "cls": "cnb-button ng-star-inserted",
+        "visible": true,
+        "text": "定时发布"
+      }
+    ],
+    "fileInputs": [],
+    "frameworks": {
+      "prosemirror": 0,
+      "quill": 0,
+      "codemirror": 0,
+      "ueditor": 0,
+      "bytemd": 0
+    }
+  },
+  {
+    "platformId": "baijia",
+    "account": "此星光明",
+    "status": 200,
+    "url": "https://baijiahao.baidu.com/builder/rc/edit?type=news",
+    "title": "百家号",
+    "bodyText": "图文\n视频\n动态\n直播\n合集\n|AI成片\n《百家号平台服务协议》\n正文\n插入\n请输入标题（2 - 64字）\n\n\n\n\n智能标题\n请输入正文\n基础信息\n一键填写\n设置封面\n单图\n三图\n选择封面\n优质封面有助于获得更多流量查看封面展示页面\n活动投稿\n+6\n智能创作\n自动生成播客\n创作声明\n采用AI生成内容\n来源说明\n拓展设置\n支持用户打赏\n\n欢迎使用AI助手\n\n意见反馈\n百度\n专属推荐\n高热\n社会\n娱乐\n财经\n体育\n科技\n汽车\n国际\n其他\n1\n亚太共此时\n2\nS16总决赛：中国战队BLG逆转夺冠\n3\n中国近六成家庭户不超过两个人\n4\n本周多领域硬核成果刷屏\n5\n天价羽绒服滤镜被超市平替撕碎\n6\n火锅才吃一半 面前堆起座“纸巾山”\n1/2\nAI助手是一款AI工具，其回答未必正确无误\n内容检测\n找素材\n查热点\n去带货\n字数 0已保存\n发文设置\n存草稿\n预览\n定时发布\n发布\n手机查看\n规则中心\n问题咨询\n收起\n新增智能标题，输入正文，Al为您生成优质标题，快来试试吧！",
+    "inputs": [
+      {
+        "tag": "div",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "",
+        "cls": "FeEditorApp-_9ddb7e475b559749-editor FeEditorApp-_377c94a778c072b3-editor",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "textarea",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "",
+        "cls": "FeEditorApp-_9ddb7e475b559749-simulator",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "file",
+        "cls": "",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "cover",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "cheetah-radio-input",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "cover",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "radio",
+        "cls": "cheetah-radio-input",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "cheetah-checkbox-input",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "cheetah-checkbox-input",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "cheetah-checkbox-input",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "请选择时间",
+        "aria": "",
+        "role": "",
+        "type": "",
+        "cls": "",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "rc_select_0",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "combobox",
+        "type": "search",
+        "cls": "cheetah-select-selection-search-input",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "cheetah-checkbox-input",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "textarea",
+        "id": "inputTextArea",
+        "name": "",
+        "ph": "图文创作找不到灵感？来问问AI助手吧～",
+        "aria": "",
+        "role": "",
+        "type": "",
+        "cls": "cheetah-input css-1o1cgpv cheetah-input-outlined",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "textarea",
+        "id": "",
+        "name": "hiddenTextarea",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "",
+        "cls": "",
+        "visible": false,
+        "text": ""
+      }
+    ],
+    "iframes": [
+      {
+        "id": "ueditor_0",
+        "cls": "",
+        "src": "javascript:void(function(){document.open();document.write(\"<!DOCTYPE html><html xmlns='http://www.w3.org/1999/xhtml' cla"
+      },
+      {
+        "id": "",
+        "cls": "",
+        "src": ""
+      },
+      {
+        "id": "",
+        "cls": "edui-default",
+        "src": "about:blank"
+      }
+    ],
+    "buttons": [
+      {
+        "tag": "button",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "button",
+        "cls": "cheetah-btn css-fl992q cheetah-btn-default cheetah-btn-outlined cheetah-public acss-qlkyg1",
+        "visible": true,
+        "text": "定时发布"
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "button",
+        "cls": "cheetah-btn css-w10alf cheetah-btn-primary cheetah-btn-solid cheetah-public acss-qlkyg1 ac",
+        "visible": true,
+        "text": "发布"
+      }
+    ],
+    "fileInputs": [
+      {
+        "accept": "video/*",
+        "id": "",
+        "name": "",
+        "cls": "",
+        "visible": false
+      }
+    ],
+    "frameworks": {
+      "prosemirror": 0,
+      "quill": 0,
+      "codemirror": 0,
+      "ueditor": 1,
+      "bytemd": 0
+    }
+  },
+  {
+    "platformId": "juejin",
+    "account": "此星光明",
+    "status": 200,
+    "url": "https://juejin.cn/editor/drafts/new",
+    "title": "写文章 - 掘金",
+    "bodyText": "文章将自动保存至草稿箱\n草稿箱\n发布\n \n​\n字符数: 0行数: 1正文字数: 0\n同步滚动回到顶部",
+    "inputs": [
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "输入文章标题...",
+        "aria": "",
+        "role": "",
+        "type": "",
+        "cls": "title-input title-input",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "",
+        "cls": "byte-select__input",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "file",
+        "cls": "",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "",
+        "cls": "byte-select__input",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "",
+        "cls": "byte-select__input",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "textarea",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "",
+        "cls": "byte-input__textarea",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "file",
+        "cls": "file-input",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "textarea",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "checkbox",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "textarea",
+        "id": "",
+        "name": "",
+        "ph": "目前仅支持审核通过的西瓜视频链接",
+        "aria": "",
+        "role": "",
+        "type": "",
+        "cls": "byte-input__textarea",
+        "visible": false,
+        "text": ""
+      }
+    ],
+    "iframes": [],
+    "buttons": [
+      {
+        "tag": "button",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "",
+        "cls": "xitu-btn",
+        "visible": true,
+        "text": "发布"
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "",
+        "cls": "select-btn",
+        "visible": false,
+        "text": "上传封面"
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "",
+        "cls": "ui-btn btn primary medium default",
+        "visible": false,
+        "text": "确定并发布"
+      }
+    ],
+    "fileInputs": [
+      {
+        "accept": "",
+        "id": "",
+        "name": "",
+        "cls": "",
+        "visible": false
+      },
+      {
+        "accept": "",
+        "id": "",
+        "name": "",
+        "cls": "file-input",
+        "visible": false
+      }
+    ],
+    "frameworks": {
+      "prosemirror": 0,
+      "quill": 0,
+      "codemirror": 1,
+      "ueditor": 0,
+      "bytemd": 1
+    }
+  },
+  {
+    "platformId": "bilibili_video",
+    "account": "此星光明",
+    "status": 200,
+    "url": "https://member.bilibili.com/platform/upload/video/frame",
+    "title": "创作中心 - 哔哩哔哩弹幕视频网 - ( ゜- ゜)つロ 乾杯~",
+    "bodyText": " 主站\n试试更多AI创作工具吧\n18\n成为UP主的第675天\n投稿\n首页\n内容管理\n数据中心\n粉丝管理\n互动管理\n收益管理\n花生\nupdream\n创作成长\n任务中心\n必火推广\n创作学院\n创作权益\n社区公约\n创作设置\n视频投稿短剧投稿专栏投稿UP动画互动视频投稿\n视频大小\n视频大小16G以内，时长10小时以内\n粉丝数 ≥ 1000，可自动解锁64G超大文件\n视频格式\n推荐上传 MP4/MOV/MKV 格式，转码更快、过审更顺利～\n视频分辨率\n推荐分辨率：1080P 、4K ，高分辨率更清晰流畅～\n点击上传或将视频拖拽到此区域\n上传视频\n\n花生\n\n输入文案一键成片，人人都能做视频\n立即使用\n\nupdream\n\n你的一站式AI视频创作平台\n立即使用\n上传视频，即表示您已同意 哔哩哔哩使用协议 与 哔哩哔哩社区公约 ，请勿上传色情，反动等违法视频， 查看社区规则",
+    "inputs": [
+      {
+        "tag": "input",
+        "id": "",
+        "name": "",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "file",
+        "cls": "",
+        "visible": false,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "buploader",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "file",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      },
+      {
+        "tag": "input",
+        "id": "",
+        "name": "buploader",
+        "ph": "",
+        "aria": "",
+        "role": "",
+        "type": "file",
+        "cls": "",
+        "visible": true,
+        "text": ""
+      }
+    ],
+    "iframes": [
+      {
+        "id": "",
+        "cls": "",
+        "src": "https://message.bilibili.com/pages/nav/index_new_pc_sync"
+      },
+      {
+        "id": "",
+        "cls": "",
+        "src": "https://s1.hdslb.com/bfs/seed/jinkela/short/cols/iframe.html"
+      }
+    ],
+    "buttons": [],
+    "fileInputs": [
+      {
+        "accept": ".mp4,.flv,.avi,.wmv,.mov,.webm,.mpeg4,.ts,.mpg,.rm,.rmvb,.mkv,.m4v,.vob,.swf,.3gp,.mts,.m2v,.m2ts,.f4v,.m2t,.3g2,.asf",
+        "id": "",
+        "name": "",
+        "cls": "",
+        "visible": false
+      },
+      {
+        "accept": ".mp4,.flv,.avi,.wmv,.mov,.webm,.mpeg4,.ts,.mpg,.rm,.rmvb,.mkv,.m4v,.vob,.swf,.3gp,.mts,.m2v,.m2ts,.f4v,.m2t,.3g2,.asf",
+        "id": "",
+        "name": "buploader",
+        "cls": "",
+        "visible": true
+      },
+      {
+        "accept": ".txt",
+        "id": "",
+        "name": "buploader",
+        "cls": "",
+        "visible": true
+      }
+    ],
+    "frameworks": {
+      "prosemirror": 0,
+      "quill": 0,
+      "codemirror": 0,
+      "ueditor": 0,
+      "bytemd": 0
+    }
+  }
+]

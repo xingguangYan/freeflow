@@ -1,0 +1,39 @@
+{
+  "lexical": [
+    {
+      "html": "<div class=\"FeEditorApp-_9ddb7e475b559749-editor FeEditorApp-_377c94a778c072b3-editor\" contenteditable=\"true\" data-lexical-editor=\"true\" style=\"user-select: text; white-space: pre-wrap; word-break: break-word;\"><p dir=\"a",
+      "visible": true
+    }
+  ],
+  "titleLabels": [
+    {
+      "tag": "H4",
+      "cls": "modal-title",
+      "parent": "<div class=\"modal-header\"> <button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-hidden=\"true\">× </button> <h4 class=\"modal-title\" id=\"resModalLabel\"> 标题 </h4> </div>",
+      "grand": "<div class=\"modal-content\" style=\"width:398px;height:232px;\"> <div class=\"modal-header\"> <button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-hidden=\"true\">× </button> <h4 class=\"modal-title\" id=\"resModalLabel\">"
+    },
+    {
+      "tag": "H4",
+      "cls": "modal-title",
+      "parent": "<div class=\"modal-header\"> <button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-hidden=\"true\">× </button> <h4 class=\"modal-title\" id=\"audio-insert-modalLabel\"> 标题 </h4> </div>",
+      "grand": "<div class=\"modal-content\" style=\"width:840px;height:570px;\"> <div class=\"modal-header\"> <button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-hidden=\"true\">× </button> <h4 class=\"modal-title\" id=\"audio-insert-mo"
+    }
+  ],
+  "allInputs": [
+    "<input type=\"file\" accept=\"video/*\" style=\"display: none;\">",
+    "<input name=\"cover\" class=\"cheetah-radio-input\" type=\"radio\" value=\"one\" checked=\"\">",
+    "<input name=\"cover\" class=\"cheetah-radio-input\" type=\"radio\" value=\"three\">",
+    "<input class=\"cheetah-checkbox-input\" type=\"checkbox\" checked=\"\">",
+    "<input class=\"cheetah-checkbox-input\" type=\"checkbox\">",
+    "<input class=\"cheetah-checkbox-input\" type=\"checkbox\">",
+    "<input aria-invalid=\"false\" autocomplete=\"off\" size=\"12\" placeholder=\"请选择时间\" value=\"\">",
+    "<input type=\"search\" autocomplete=\"off\" class=\"cheetah-select-selection-search-input\" role=\"combobox\" aria-expanded=\"false\" aria-haspopup=\"listbox\" aria-owns=\"rc_select_0_list\" aria-autocomplete=\"list\" aria-controls=\"rc_",
+    "<input class=\"cheetah-checkbox-input\" type=\"checkbox\" checked=\"\">"
+  ],
+  "editors": [
+    "<div id=\"edui1\" class=\"edui-editor edui-default\" style=\"width: 100%; z-index: 98;\"><div id=\"edui1_toolbarbox\" class=\"edui-editor-toolbarbox edui-default\"><div id=\"edui1_toolbarboxouter\" class=\"edui-editor-toolbarboxouter",
+    "<iframe id=\"ueditor_0\" width=\"100%\" height=\"100%\" frameborder=\"0\" src=\"javascript:void(function(){document.open();document.write(&quot;&lt;!DOCTYPE html&gt;&lt;html xmlns='http://www.w3.org/1999/xhtml' class='view' &gt;&",
+    "<iframe style=\"display: none !important;\"></iframe>",
+    "<iframe style=\"position:absolute;z-index:-1;left:0;top:0;background-color: transparent;\" frameborder=\"0\" width=\"100%\" height=\"100%\" src=\"about:blank\" class=\"edui-default\"></iframe>"
+  ]
+}
