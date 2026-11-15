@@ -359,6 +359,11 @@ async function fillTitle(page, platform, title) {
   const max = platform.titleMax || 0;
   let t = String(title || '');
   if (max && t.length > max) t = t.slice(0, Math.max(1, max - 1)) + '…';
+  const ad = adapterOf(platform);
+  if (ad && typeof ad.fillTitle === 'function') {
+    const ok = await ad.fillTitle(page, t, adapterLog(platform)).catch(() => false);
+    if (ok) return true;
+  }
   const hit = await pickVisibleIn(page, sel(platform, 'titleSelectors', GENERIC_TITLE));
   if (!hit) {
     // 有的平台标题框是隐藏的真实输入框（如 CSDN），直接写值
@@ -396,11 +401,24 @@ async function fillContent(page, platform, html) {
   const probe = htmlToText(payload).replace(/\s+/g, '');
   if (!probe) return false;
   const head = probe.slice(0, 30), tail = probe.slice(-20);
+  const ad = adapterOf(platform);
+  if (ad && typeof ad.fillContent === 'function') {
+    const ok = await ad.fillContent(page, { html, md: htmlToMd(html), probe, head, tail }, adapterLog(platform)).catch(() => false);
+    if (ok) return true;
+    adapterLog(platform)('适配器注入未成功，回退通用逻辑');
+  }
   // 富文本平台若是 UEditor（CSDN / 公众号），先走官方实例 API，比模拟粘贴可靠得多
   if (!isMd && await ueFill(page, payload, head, tail, probe.length)) return true;
   const candidates = sel(platform, 'contentSelectors', GENERIC_CONTENT);
-  // 百家号等平台的标题也是可编辑区，通用选择器会先匹配到标题 → 正文候选里排除标题元素
-  const hit = await pickVisibleIn(page, candidates, isTitleEl);
+  // 标题/摘要都不能当正文：CSDN 的摘要框曾把整篇正文吞进去
+  const isNotContent = async loc => {
+    if (await isTitleEl(loc)) return true;
+    try {
+      const sig = [await loc.getAttribute('id'), await loc.getAttribute('class'), await loc.getAttribute('placeholder'), await loc.getAttribute('aria-label')].join(' ');
+      return /摘要|sammary|summary|概述|简介|description/i.test(sig);
+    } catch { return false; }
+  };
+  const hit = await pickVisibleIn(page, candidates, isNotContent);
   if (!hit) return false;
   const { loc } = hit;
   // 草稿保护：编辑器里已有无关内容时不覆盖，交给手动模式
@@ -481,6 +499,21 @@ async function fillContent(page, platform, html) {
         ok = await present();
       }
     }
+  }
+  if (ok) {
+    // 防串校验：任何「摘要/summary」字段里出现正文开头，视为注入错误
+    try {
+      const leaked = await page.evaluate(h => {
+        const els = [...document.querySelectorAll('textarea,input,[contenteditable="true"]')];
+        return els.some(el => {
+          const sig = [el.id, el.className, el.getAttribute('placeholder'), el.getAttribute('aria-label')].join(' ');
+          if (!/摘要|sammary|summary|概述|简介|description/i.test(sig)) return false;
+          const v = (el.value !== undefined ? el.value : el.innerText || '').replace(/\s+/g, '');
+          return h && v.includes(h);
+        });
+      }, head).catch(() => false);
+      if (leaked) { console.warn('[fill] 检测到正文写入摘要框，已中止自动填充'); return false; }
+    } catch { /* 忽略校验异常 */ }
   }
   return ok;
 }
@@ -753,6 +786,12 @@ async function fillDesc(page, platform, text) {
 const GENERIC_TAGS = ['input[placeholder*="标签"]', 'input[placeholder*="话题"]', 'input[placeholder*="标签/话题"]'];
 async function fillTags(page, platform, tags) {
   if (!tags) return false;
+  const ad = adapterOf(platform);
+  if (ad && typeof ad.fillTags === 'function') {
+    const ok = await ad.fillTags(page, tags, adapterLog(platform)).catch(() => false);
+    if (ok) return true;
+    adapterLog(platform)('适配器标签注入未成功，回退通用逻辑');
+  }
   const hit = await pickVisibleIn(page, sel(platform, 'tagSelectors', GENERIC_TAGS));
   if (!hit) return false;
   const { loc } = hit;

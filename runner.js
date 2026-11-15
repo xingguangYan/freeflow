@@ -128,7 +128,7 @@ async function publishToAccount(account, article, coverPath) {
   if (!ready) ready = await auto.waitForEditor(cur, platform, 12000);
   if (!ready) log('', account.id, 'warn', '编辑器识别较慢，仍尝试填充');
   const accName = account.name, pName = platform.name;
-  let filledTitle = false, filledContent = false;
+  let filledTitle = false, filledContent = false, filledTags = false;
  let contentHtml = '';
   try {
     const artMode = article.mode || 'richtext';
@@ -137,11 +137,12 @@ async function publishToAccount(account, article, coverPath) {
     filledTitle = await auto.fillTitle(cur, platform, article.title);
     filledContent = await auto.fillContent(cur, platform, contentHtml);
     if (!platform.noCoverUpload && coverPath && fs.existsSync(coverPath)) coverOk = await auto.uploadCover(cur, platform, coverPath);
+    if (article.tags) filledTags = await auto.fillTags(cur, platform, article.tags);
   } catch (e) {
     log('', account.id, 'error', '填充异常: ' + e.message);
   }
   log('', account.id, filledTitle && filledContent ? 'info' : 'warn',
-    `填充结果 标题:${filledTitle ? '成功' : '失败'} 正文:${filledContent ? '成功' : '失败'}（正文约 ${auto.htmlToText(article.content || '').replace(/\s+/g, '').length} 字）`);
+    `填充结果 标题:${filledTitle ? '成功' : '失败'} 正文:${filledContent ? '成功' : '失败'} 标签:${article.tags ? (filledTags ? '成功' : '失败') : '无'}（正文约 ${auto.htmlToText(article.content || '').replace(/\s+/g, '').length} 字）`);
   // 平台适配器钩子：填充后处理弹窗（原创声明/同步等），并输出分步日志
   const ad = auto.adapterOf(platform);
   const adlog = auto.adapterLog(platform);
@@ -179,7 +180,7 @@ async function publishToAccount(account, article, coverPath) {
 
   // 发布前必填项检查（适配器声明）：封面/标题/正文未就绪时不盲目提交
   if (ad && ad.preflight) {
-    const pre = await ad.preflight(cur, adlog).catch(e => ({ ok: false, issues: [e.message] }));
+    const pre = await ad.preflight(cur, adlog, { filledTitle, filledContent }).catch(e => ({ ok: false, issues: [e.message] }));
     if (!pre.ok) {
       log('', account.id, 'error', '发布前检查未通过：' + pre.issues.join('；'));
       return { status: 'manual', message: '发布前检查未通过：' + pre.issues.join('；') + '（窗口已保留，请补全后手动发布）', keepCtx: ctx, page: cur };
