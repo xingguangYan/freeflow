@@ -291,6 +291,22 @@ app.post('/api/videos', (req, res) => {
   log('', '', 'info', `视频已入库 ${item.name} ${(buf.length / 1048576).toFixed(1)}MB`);
   res.json(item);
 });
+// 大文件二进制直传（前端 fetch(file)），避免 base64 内存翻倍
+app.post('/api/videos/upload', express.raw({ type: 'application/octet-stream', limit: '2048mb' }), (req, res) => {
+  try {
+    const rawName = String(req.query.name || req.headers['x-file-name'] || 'video.mp4');
+    const ext = (rawName.split('.').pop() || 'mp4').toLowerCase().replace(/[^a-z0-9]/g, '') || 'mp4';
+    const buf = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
+    if (!buf.length) return res.status(400).json({ error: '视频内容为空' });
+    const fileName = uid('vid') + '.' + ext;
+    fs.writeFileSync(path.join(VIDEOS, fileName), buf);
+    const list = load('videos.json', []);
+    const item = { file: fileName, name: rawName, size: buf.length, ts: Date.now() };
+    list.push(item); save('videos.json', list);
+    log('', '', 'info', '视频已入库 ' + item.name + ' ' + (buf.length / 1048576).toFixed(1) + 'MB');
+    res.json(item);
+  } catch (e) { res.status(500).json({ error: '视频保存失败：' + e.message }); }
+});
 app.post('/api/videos/path', (req, res) => {
   const p = req.body && req.body.path;
   if (!p || !fs.existsSync(p)) return res.status(400).json({ error: '文件不存在，请检查路径' });
@@ -322,6 +338,20 @@ app.post('/api/audios', (req, res) => {
   list.push(item); save('audios.json', list);
   log('', '', 'info', `音频已入库 ${item.name} ${(buf.length / 1048576).toFixed(1)}MB`);
   res.json(item);
+});
+app.post('/api/audios/upload', express.raw({ type: 'application/octet-stream', limit: '512mb' }), (req, res) => {
+  try {
+    const rawName = String(req.query.name || req.headers['x-file-name'] || 'audio.mp3');
+    const ext = (rawName.split('.').pop() || 'mp3').toLowerCase().replace(/[^a-z0-9]/g, '') || 'mp3';
+    const buf = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
+    if (!buf.length) return res.status(400).json({ error: '音频内容为空' });
+    const fileName = uid('aud') + '.' + ext;
+    fs.writeFileSync(path.join(AUDIOS, fileName), buf);
+    const list = load('audios.json', []);
+    const item = { file: fileName, name: rawName, size: buf.length, ts: Date.now() };
+    list.push(item); save('audios.json', list);
+    res.json(item);
+  } catch (e) { res.status(500).json({ error: '音频保存失败：' + e.message }); }
 });
 app.post('/api/audios/path', (req, res) => {
   const p = req.body && req.body.path;
