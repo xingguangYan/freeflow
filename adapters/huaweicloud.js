@@ -12,5 +12,5 @@ module.exports = {
   publishTexts: ['发布', '提交'],
   dialogTexts: ['确定', '继续发布'],
   async handleDialogs(page, log) { await base.clickByTexts(page, this.dialogTexts, log); },
-  async preflight(page, log) { return base.defaultPreflight(page, this, log); }
+  async preflight(page, log, ctx) { return base.defaultPreflight(page, this, log, ctx); }
 };

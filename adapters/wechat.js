@@ -17,5 +17,5 @@ module.exports = {
     log(hit ? '公众号 UEditor iframe 正文已定位（' + hit.selector + '）' : '公众号正文未定位，可能需手动确认');
   },
   async handleDialogs(page, log) { await base.clickByTexts(page, this.dialogTexts, log); },
-  async preflight(page, log) { return base.defaultPreflight(page, this, log); }
+  async preflight(page, log, ctx) { return base.defaultPreflight(page, this, log, ctx); }
 };
