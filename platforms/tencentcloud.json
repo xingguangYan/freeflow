@@ -1,0 +1,23 @@
+{
+  "id": "tencentcloud",
+  "name": "腾讯云开发者社区",
+  "hostText": "cloud.tencent.com",
+  "editorUrl": "https://cloud.tencent.com/developer/article/write-new",
+  "editorKernel": "monaco-codemirror6",
+  "contentEditable": false,
+  "contentSelectors": ["div.cm-content", ".cm-editor .cm-content", ".CodeMirror-code", "[contenteditable=\"true\"]"],
+  "contentFillMethod": "cdp-clipboard-paste",
+  "titleSelectors": ["textarea[placeholder=\"请输入标题\"]", "textarea[placeholder*=\"标题\"]", "input[name=\"title\"]"],
+  "titleInputType": "textarea",
+  "coverSelectors": ["input[type=\"file\"][accept*=\"image\"]", "input[type=\"file\"]"],
+  "tagSelectors": ["input[placeholder*=\"标签\"]", "input[placeholder*=\"添加标签\"]"],
+  "publishSelectors": ["button:has-text(\"提交\")"],
+  "publishTexts": ["发布", "提交"],
+  "dialogTexts": ["确定", "继续发布"],
+  "loginSuccessSelectors": ["textarea[placeholder=\"请输入标题\"]", "button:has-text(\"写博客\")", "button:has-text(\"发表\")"],
+  "loginUrl": "https://cloud.tencent.com/developer",
+  "loggedInUrl": "/cloud\\.tencent\\.com\\/developer/",
+  "antiCrawl": "edgeone",
+  "noDirectApi": true,
+  "note": "正文编辑器为 Monaco / CodeMirror 6（div.cm-content），element.value 无效，必须走 CDP 剪贴板 Ctrl+V；无标签页应先跳登录页，登录后自动跳回编辑页。"
+}

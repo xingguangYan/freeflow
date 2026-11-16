@@ -801,6 +801,72 @@ async function fillTags(page, platform, tags) {
   await page.keyboard.press('Enter').catch(() => {});
   return true;
 }
+ 
+ // 发布后阅后校验：打开发布/预览页正文，检查表格、代码块语言标注、图片 URL 是否完整。
+ // 静默损坏（接口 200 但内容丢失）必须通过阅读回渲染页面才能发现。
+ async function verifyPublishedContent(page, expectedHtml, platform) {
+   const report = { ok: true, issues: [], tables: 0, codeBlocks: 0, images: 0 };
+   try {
+     const bodyHtml = await page.evaluate(() => document.body && document.body.innerHTML || '');
+     if (!bodyHtml) { report.ok = false; report.issues.push('页面正文为空'); return report; }
+     const tables = (bodyHtml.match(/<table[\s\S]*?<\/table>/gi) || []).length;
+     const codeBlocks = (bodyHtml.match(/<pre[\s\S]*?<\/pre>/gi) || []).length;
+     const imgs = (bodyHtml.match(/<img[^>]+src="([^"]+)"/gi) || []).length;
+     report.tables = tables; report.codeBlocks = codeBlocks; report.images = imgs;
+     const expectedTables = (expectedHtml.match(/<table[\s\S]*?<\/table>/gi) || []).length;
+     const expectedCode = (expectedHtml.match(/<pre[\s\S]*?<\/pre>/gi) || []).length;
+     const expectedImgs = (expectedHtml.match(/<img[^>]+src="([^"]+)"/gi) || []).length;
+     if (expectedTables > 0 && tables === 0) { report.ok = false; report.issues.push('表格被吞（期望 ' + expectedTables + '，实测 0）'); }
+     if (expectedCode > 0 && codeBlocks === 0) { report.ok = false; report.issues.push('代码块被吞（期望 ' + expectedCode + '，实测 0）'); }
+     if (expectedImgs > 0 && imgs === 0) { report.ok = false; report.issues.push('图片被吞/未上传到图床（期望 ' + expectedImgs + '，实测 0）'); }
+     const localOrData = (bodyHtml.match(/src="(?:\/materials\/|data:)/gi) || []).length;
+     if (localOrData > 0) { report.ok = false; report.issues.push('存在本地路径或 base64 图片，未迁移到平台图床（' + localOrData + ' 处）'); }
+   } catch (e) { report.ok = false; report.issues.push('阅后校验异常：' + e.message); }
+   return report;
+ }
+ 
+ // 截图并抛出带截图路径的错误，禁止静默跳过
+ async function failWithScreenshot(page, where, message) {
+   let shot = null;
+   try {
+     const dir = 'tools/screenshots';
+     const fs = require('fs');
+     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+     shot = path.join(dir, where + '-' + Date.now() + '.png');
+     await page.screenshot({ path: shot, fullPage: true }).catch(() => {});
+   } catch { /* */ }
+   const err = new Error(message + (shot ? ' [截图 ' + shot + ']' : ''));
+   err.screenshot = shot;
+   throw err;
+ }
+ 
+ // 图片"本地 → 平台图床"：向编辑器发送真实图片文件剪贴板 + Ctrl+V，
+ // 触发平台自身的图片上传流程（富文本编辑器通用）。本地路径/base64 不再直接留在正文里。
+ async function pasteImageFile(page, loc, imagePath) {
+   try {
+     await loc.click({ timeout: 4000 }).catch(() => {});
+     await loc.evaluate(el => el.focus()).catch(() => {});
+     const buf = await fs.promises.readFile(imagePath);
+     const ext = path.extname(imagePath).toLowerCase().replace('.', '');
+     const mime = ext === 'jpg' ? 'image/jpeg' : (ext === 'png' ? 'image/png' : (ext === 'gif' ? 'image/gif' : 'application/octet-stream'));
+     const b64 = buf.toString('base64');
+     const ok = await page.evaluate(async ({ b64, mime }) => {
+       try {
+         const bin = atob(b64);
+         const arr = new Uint8Array(bin.length);
+         for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+         const blob = new Blob([arr], { type: mime });
+         const item = new ClipboardItem({ [mime]: blob });
+         await navigator.clipboard.write([item]);
+         return true;
+       } catch { return false; }
+     }, { b64, mime });
+     if (!ok) return false;
+     await page.keyboard.press('Control+V').catch(() => {});
+     await page.waitForTimeout(1000);
+     return true;
+   } catch { return false; }
+ }
 
 module.exports = {
   launch, profileDir, clickIfAny, waitForPopup, pickVisible, closeCtx,
@@ -810,6 +876,7 @@ module.exports = {
   clickTextButton, clickPreviewThenPublish,
  waitForPublishSuccess,
  checkEditorFormatting,
+  verifyPublishedContent, failWithScreenshot, pasteImageFile,
   uploadVideo, uploadMedia, fillDesc, fillTags, GENERIC_DESC, GENERIC_TAGS,
   GENERIC_TITLE, GENERIC_CONTENT,
   adapterOf, adapterLog

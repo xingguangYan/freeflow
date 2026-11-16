@@ -1,5 +1,7 @@
 'use strict';
 // 适配器公共能力：分步日志、iframe 查找、弹窗处理、发布前检查
+const fs = require('fs');
+const path = require('path');
 function logger(id) {
   return (...args) => console.log('[adapter:' + id + ']', ...args);
 }
@@ -131,3 +133,49 @@ async function pasteRich(page, loc, html, text, log) {
   } catch { return false; }
 }
 module.exports.pasteRich = pasteRich;
+ 
+ // CDP 剪贴板真实粘贴：把 HTML/纯文本写入剪贴板，再向目标元素发送 Ctrl+V，
+ // 让 Monaco / CodeMirror6 等编辑器把它当作用户粘贴（element.value 对它们无效）。
+ async function pasteClipboardHtml(page, loc, html, text, log) {
+   try {
+     await loc.click({ timeout: 4000 }).catch(() => {});
+     await loc.evaluate(el => el.focus()).catch(() => {});
+     await page.keyboard.press('Control+A').catch(() => {});
+     await page.keyboard.press('Delete').catch(() => {});
+     const okClip = await page.evaluate(async ({ html, text }) => {
+       try {
+         const item = new ClipboardItem({
+           'text/html': new Blob([html], { type: 'text/html' }),
+           'text/plain': new Blob([text || ''], { type: 'text/plain' })
+         });
+         await navigator.clipboard.write([item]);
+         return true;
+       } catch { return false; }
+     }, { html, text });
+     if (!okClip) { if (log) log('写入剪贴板失败'); return false; }
+     await page.keyboard.press('Control+V').catch(() => {});
+     await page.waitForTimeout(800);
+     const got = await loc.evaluate(el => (el.innerText || el.value || '').replace(/\s+/g, '')).catch(() => '');
+     const probe = String(text || '').replace(/\s+/g, '').slice(0, 24);
+     if (log) log('CDP 剪贴板粘贴' + (got.includes(probe) ? '成功' : '后校验未通过'));
+     return got.includes(probe);
+   } catch { return false; }
+ }
+ module.exports.pasteClipboardHtml = pasteClipboardHtml;
+ 
+ // 加载平台选择器 JSON 配置（platforms/<id>.json），缺失则回退空对象；
+ // 平台改版时只需改 JSON，无需动业务逻辑。
+ const CONFIG_DIR = path.join(__dirname, '..', 'platforms');
+ const configCache = new Map();
+ function loadPlatformConfig(id) {
+   if (!id) return {};
+   if (configCache.has(id)) return configCache.get(id);
+   let cfg = {};
+   try {
+     const p = path.join(CONFIG_DIR, id + '.json');
+     if (fs.existsSync(p)) cfg = JSON.parse(fs.readFileSync(p, 'utf8'));
+   } catch { /* 平台无 JSON 配置，使用适配器内置选择器 */ }
+   configCache.set(id, cfg);
+   return cfg;
+ }
+ module.exports.loadPlatformConfig = loadPlatformConfig;

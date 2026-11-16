@@ -31,6 +31,61 @@ async function waitForLogin(ctx, page, platform, accountId, minutes = 5) {
   }
   return false;
 }
+ 
+ // 基于 DOM 状态变化的登录检测：不再用固定 sleep 判断成功，而是轮询页面关键元素出现 / URL 跳转 / 登录墙消失。
+ async function checkLoginByDom(page, platform) {
+   // 1) 平台 loginSuccessSelectors 出现（适配器声明的编辑器页关键元素，如标题输入框、写博客按钮）
+   const ad = auto.adapterOf(platform);
+   const successSels = (ad && ad.loginSuccessSelectors) || platform.loginSuccessSelectors || [];
+   for (const s of successSels) {
+     try {
+       const loc = page.locator(s).first();
+       if (await loc.count().catch(() => false) && await loc.isVisible().catch(() => false)) return true;
+     } catch { /* 跨域/瞬时失败 */ }
+   }
+   // 2) URL 从登录页跳转到目标发布页路径
+   try {
+     if (platform.loggedInUrl && platform.loggedInUrl.test(page.url())) return true;
+   } catch { /* 正则异常 */ }
+   // 3) 登录按钮/扫码弹窗消失，且出现用户头像或退出登录
+   try {
+     const txt = await page.evaluate(() => ((document.body && document.body.innerText) || '').slice(0, 3000));
+     if (/退出登录|注销|个人中心/.test(txt) && !/请重新登录|扫码登录|登录已失效/.test(txt)) return true;
+   } catch { /* */ }
+   return false;
+ }
+ 
+ // 新版 waitForLogin：基于 DOM 状态变化轮询检测，1.5s 间隔，5 分钟超时；成功后立即关闭检测标签页。
+ async function waitForLoginV2(ctx, page, platform, accountId, minutes = 5) {
+   log('', accountId, 'warn', `检测到未登录，已打开 ${platform.name} 登录页，请在浏览器中完成登录（最多等 ${minutes} 分钟）`);
+  try {
+  // 独立检测标签页：登录完成后只关它，发布主页面继续复用同一个 context
+  let detect = page;
+  try {
+    detect = await ctx.newPage();
+  } catch { detect = page; }
+  const ownsPage = detect !== page;
+  await detect.goto(platform.loginUrl, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {});
+   const started = Date.now();
+   while (Date.now() - started < minutes * 60 * 1000) {
+    if (await checkLoginByDom(detect, platform)) {
+       log('', accountId, 'info', `${platform.name} 登录成功（DOM 状态检测）`);
+       return true;
+     }
+    // cookie 兜底：部分平台登录后停留在无特征页，只有 cookie 能确认
+    if (await auto.checkLoggedIn(ctx, platform, detect)) {
+      log('', accountId, 'info', `${platform.name} 登录成功（cookie 检测）`);
+      return true;
+    }
+    await detect.waitForTimeout(1500).catch(() => {});
+   }
+   log('', accountId, 'error', `${platform.name} 登录等待超时（${minutes} 分钟）`);
+  return false;
+ } finally {
+   // 登录成功或超时后都立即关闭检测标签页，不留污染后续发布流程的窗口
+   if (ownsPage) { await detect.close().catch(() => {}); }
+ }
+}
 
 // 发布一个账号。返回 {status:'ok'|'manual'|'failed', message}
 async function publishToAccount(account, article, coverPath) {
@@ -205,6 +260,14 @@ async function publishToAccount(account, article, coverPath) {
       }
     }
     ok = res.ok;
+   // 发布后阅后校验：回读页面正文，发现静默损坏（表格/代码块/图片被吞、本地路径未迁移）
+   if (ok && filledContent) {
+     try {
+       const vr = await auto.verifyPublishedContent(cur, contentHtml, platform);
+       if (vr.ok) { adlog(`阅后校验通过：表格 ${vr.tables}、代码块 ${vr.codeBlocks}、图片 ${vr.images}`); }
+       else { log('', account.id, 'warn', '发布成功但阅后校验发现异常：' + vr.issues.join('；')); }
+     } catch (e) { log('', account.id, 'warn', '阅后校验异常：' + e.message); }
+   }
     if (!ok) detail += res.how === 'closed' ? '；页面已关闭' : '；未检测到发布成功提示';
   } else {
     detail = '没找到发布按钮，可能需要手动点';

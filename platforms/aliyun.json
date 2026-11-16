@@ -1,0 +1,23 @@
+{
+  "id": "aliyun",
+  "name": "阿里云开发者社区",
+  "hostText": "developer.aliyun.com",
+  "editorUrl": "https://developer.aliyun.com/article/new",
+  "editorKernel": "richtext-unknown",
+  "contentEditable": true,
+  "contentSelectors": ["[data-testid=\"content-editor\"]", "[contenteditable=\"true\"]", ".ProseMirror", ".ql-editor", ".CodeMirror", "textarea"],
+  "contentFillMethod": "paste-html",
+  "titleSelectors": ["input[data-testid=\"title-input\"]", "input[placeholder*=\"标题\"]", "input[name=\"title\"]", "textarea[placeholder*=\"标题\"]"],
+  "titleInputType": "input",
+  "coverSelectors": ["input[type=\"file\"][accept*=\"image\"]", "input[type=\"file\"]"],
+  "tagSelectors": ["input[placeholder*=\"标签\"]", "input[placeholder*=\"添加标签\"]"],
+  "publishSelectors": ["button:has-text(\"提交\")", "button:has-text(\"发布\")"],
+  "publishTexts": ["发布", "提交"],
+  "dialogTexts": ["确定", "继续发布"],
+  "loginSuccessSelectors": ["input[placeholder*=\"标题\"]", "button:has-text(\"提交\")", "button:has-text(\"发布\")"],
+  "loginUrl": "https://developer.aliyun.com/",
+  "loggedInUrl": "/developer\\.aliyun\\.com/",
+  "preferDataTestid": true,
+  "noDirectApi": false,
+  "note": "优先 data-testid 定位；平台未提供时回退“稳定层级 + 文本内容”（如“标题”label 对应的 input）；登录检测按“标题输入框或发表按钮出现”判断，不按登录弹窗消失判断。"
+}
