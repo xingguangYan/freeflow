@@ -29,6 +29,11 @@ module.exports = {
   },
 
   async fillContent(page, ctx, log) {
+    const ok = await this._fillBody(page, ctx, log);
+    if (ok) await base.fixImageLinks(page);
+    return ok;
+  },
+  async _fillBody(page, ctx, log) {
     const iframe = page.locator('iframe').first();
     if (!(await iframe.count().catch(() => 0))) {
       log('未找到 iframe'); return false;

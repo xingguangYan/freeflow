@@ -30,6 +30,11 @@ module.exports = {
   },
 
   async fillContent(page, ctx, log) {
+    const ok = await this._fillBody(page, ctx, log);
+    if (ok) await base.fixImageLinks(page);
+    return ok;
+  },
+  async _fillBody(page, ctx, log) {
     const loc = page.locator('textarea[placeholder="请输入正文"]').first();
     let ok = false;
     if (await loc.count().catch(() => 0)) {

@@ -19,10 +19,12 @@ Freeflow drives **your own accounts** through browser automation. It cracks noth
 
 ## Latest release: v1.9.4
 
-- **Real audit of all 53 publishing entry points**: each platform's article / image / video editor URL was opened and checked for final URL, login wall, captcha, editor fingerprints (ProseMirror / Quill / CodeMirror / TinyMCE / UEditor / iframe / contenteditable) and screenshots — see `tools/platform-audit/audit.json` and `PLATFORM_MATRIX.md`
+## Latest release: v1.9.6
+
+- **Cross-platform image garbling fixed**: pasted images used to show up as broken pictures or a wall of base64 letters on several platforms. Two-layer cleanup now: Markdown payloads strip `data:` / local image links (`sanitizeMdImages`), and after filling, a page-wide scan (`fixImageLinks`, main document + every iframe) replaces any `<img>` still pointing at a local path or `data:` URI with a placeholder — with an explicit warning so you can re-upload manually
+- **v1.9.5 carried over**: DOM-state login polling (no fixed 5s wait), rewritten adapters for Tencent Cloud / Huawei Cloud / 51CTO / Aliyun editors (Monaco `div.cm-content`, iframe `body[contenteditable]`, plain textarea), externalized selector configs under `platforms/*.json`, read-back verification after publishing
 - **Business inquiries entry**: a "Business inquiries" block in the sidebar with two `mailto:` links
 - **README / Release policy**: README keeps only the current release notes, install & usage, and business contact; all older release notes live in [Releases](https://github.com/xingguangYan/freeflow/releases)
-- **Stability**: carries the v1.9.3 fixes for message-center API parsing, stats API field mapping, and editor undo/space/save-race issues
 
 > Older release notes: [GitHub Releases](https://github.com/xingguangYan/freeflow/releases).
 

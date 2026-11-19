@@ -18,6 +18,7 @@ try {
 const { chromium } = require('playwright');
 const { DATA, MATERIALS } = require('./store');
 const adapters = require('./adapters');
+const base = require('./adapters/base');
 
 // 平台适配器：独立 adapter 文件优先，缺失时回落 platforms.js 配置
 function adapterOf(platform) { try { return adapters.get(platform && platform.id); } catch { return null; } }
@@ -239,6 +240,17 @@ function htmlToMd(html) {
   s = s.replace(/<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi, '[$2]($1)');
   return htmlToText(s).replace(/\n{3,}/g, '\n\n').trim();
 }
+// Markdown 载荷图片清理：data: 与 /materials/ 的图片链接在平台侧无法解析，
+// 发布出来就是一串 base64 字母（乱码）或裂图。替换为占位文字，并返回清理数量。
+function sanitizeMdImages(md) {
+  let removed = 0;
+  const out = String(md || '').replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (m, alt, src) => {
+    if (!/^(data:|\/materials\/|file:)/i.test(src)) return m;
+    removed++;
+    return alt ? `「图片：${alt}」` : '「图片」';
+  });
+  return { md: out, removed };
+}
 // Markdown -> HTML（用于「Markdown 文章发到富文本平台」）
 function mdToHtml(md) {
   const escHtml = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -397,13 +409,16 @@ async function fillTitle(page, platform, title) {
 
 async function fillContent(page, platform, html) {
   const isMd = platform.contentType === 'markdown';
-  const payload = isMd ? htmlToMd(html) : html;
+  // Markdown 载荷必须先清掉 data:/materials/ 图片：平台编辑器收到这种链接，发布出来就是一串字母或裂图
+  const mdSan = sanitizeMdImages(htmlToMd(html));
+  if (mdSan.removed > 0) adapterLog(platform)(`Markdown 载荷清理：${mdSan.removed} 张本地/base64 图片已替换为占位符`);
+  const payload = isMd ? mdSan.md : html;
   const probe = htmlToText(payload).replace(/\s+/g, '');
   if (!probe) return false;
   const head = probe.slice(0, 30), tail = probe.slice(-20);
   const ad = adapterOf(platform);
   if (ad && typeof ad.fillContent === 'function') {
-    const ok = await ad.fillContent(page, { html, md: htmlToMd(html), probe, head, tail }, adapterLog(platform)).catch(() => false);
+    const ok = await ad.fillContent(page, { html, md: mdSan.md, probe, head, tail }, adapterLog(platform)).catch(() => false);
     if (ok) return true;
     adapterLog(platform)('适配器注入未成功，回退通用逻辑');
   }
@@ -877,6 +892,8 @@ module.exports = {
  waitForPublishSuccess,
  checkEditorFormatting,
   verifyPublishedContent, failWithScreenshot, pasteImageFile,
+  fixImageLinks: base.fixImageLinks,
+  sanitizeMdImages,
   uploadVideo, uploadMedia, fillDesc, fillTags, GENERIC_DESC, GENERIC_TAGS,
   GENERIC_TITLE, GENERIC_CONTENT,
   adapterOf, adapterLog

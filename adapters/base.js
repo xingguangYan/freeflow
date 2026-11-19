@@ -179,3 +179,36 @@ module.exports.pasteRich = pasteRich;
    return cfg;
  }
  module.exports.loadPlatformConfig = loadPlatformConfig;
+
+// 填充后图片链路修复：扫描主文档与全部 iframe 中的 <img>，
+// 凡 src/data-src 仍是本地路径（/materials/、file:）或 data: URI 的，一律替换为占位文字——
+// 这类图片在平台侧永远无法解析，发布后只会裂图或变成一串 base64 字母（乱码）。
+// 已被平台上传成功的图片 src 已是平台 CDN 地址，不受影响。
+async function fixImageLinks(page) {
+  const report = { fixed: 0, skipped: 0 };
+  const scopes = [page];
+  try { for (const f of page.frames()) if (f !== page.mainFrame()) scopes.push(f); } catch { /* */ }
+  const badSrc = s => /^(data:|\/materials\/|file:)/i.test(String(s || ''));
+  for (const scope of scopes) {
+    try {
+      const imgs = await scope.$$('img');
+      for (const el of imgs) {
+        let src = '', dataSrc = '';
+        try { src = await el.getAttribute('src') || ''; } catch { /* */ }
+        try { dataSrc = await el.getAttribute('data-src') || ''; } catch { /* */ }
+        if (badSrc(src) || (!src && badSrc(dataSrc))) {
+          await el.evaluate(node => {
+            try {
+              const ph = document.createTextNode('「图片占位符」');
+              if (node.parentElement) node.parentElement.replaceChild(ph, node);
+              else node.remove();
+            } catch { /* */ }
+          }).catch(() => {});
+          report.fixed++;
+        } else { report.skipped++; }
+      }
+    } catch { /* 跨域 frame 不可读，跳过 */ }
+  }
+  return report;
+}
+module.exports.fixImageLinks = fixImageLinks;

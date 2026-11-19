@@ -191,6 +191,12 @@ async function publishToAccount(account, article, coverPath) {
     contentHtml = auto.inlineLocalImages(contentHtml);
     filledTitle = await auto.fillTitle(cur, platform, article.title);
     filledContent = await auto.fillContent(cur, platform, contentHtml);
+    if (filledContent) {
+      try {
+        const imgFix = await auto.fixImageLinks(cur);
+        if (imgFix.fixed > 0) log('', account.id, 'warn', `图片链路修复：${imgFix.fixed} 张本地/base64 图片未能上传平台图床，已替换为占位符（发布前请在平台手动补图）`);
+      } catch (e) { log('', account.id, 'warn', '图片链接修复异常：' + e.message); }
+    }
     if (!platform.noCoverUpload && coverPath && fs.existsSync(coverPath)) coverOk = await auto.uploadCover(cur, platform, coverPath);
     if (article.tags) filledTags = await auto.fillTags(cur, platform, article.tags);
   } catch (e) {
@@ -215,7 +221,7 @@ async function publishToAccount(account, article, coverPath) {
 
   if (!filledTitle || !filledContent) {
     // 手动降级：内容进剪贴板
-    const text = article.title + '\n\n' + (platform.contentType === 'markdown' ? auto.htmlToMd(article.content) : auto.htmlToText(article.content));
+    const text = article.title + '\n\n' + (platform.contentType === 'markdown' ? auto.sanitizeMdImages(auto.htmlToMd(article.content)).md : auto.htmlToText(article.content));
     try {
       await cur.evaluate(t => navigator.clipboard.writeText(t), text);
     } catch { /* 剪贴板被拒就只能手抄了 */ }

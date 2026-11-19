@@ -37,6 +37,11 @@ module.exports = {
   },
 
   async fillContent(page, ctx, log) {
+    const ok = await this._fillBody(page, ctx, log);
+    if (ok) await base.fixImageLinks(page);
+    return ok;
+  },
+  async _fillBody(page, ctx, log) {
     // Monaco / CodeMirror6：必须用 CDP 剪贴板粘贴，不能用 element.value
     const contentSel = 'div.cm-content';
     const loc = page.locator(contentSel).first();

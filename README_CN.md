@@ -19,10 +19,12 @@
 
 ## 最新版本 v1.9.4
 
-- **53 平台发布入口真实审计**：逐平台打开文章/图片/视频编辑入口，记录最终 URL、登录墙、验证码、编辑器特征（ProseMirror / Quill / CodeMirror / TinyMCE / UEditor / iframe / contenteditable）与截图，产出 `tools/platform-audit/audit.json` 和 `PLATFORM_MATRIX.md`
+## 最新版本 v1.9.6
+
+- **修复跨平台图片乱码**：之前粘贴到部分平台编辑器的图片会显示为裂图或一堆 base64 字母。现在双重清理：Markdown 载荷先剔除 `data:` / 本地图片链接（`sanitizeMdImages`）；填充后再对整个页面及全部 iframe 扫描（`fixImageLinks`），凡仍指向本地路径或 `data:` 的 `<img>` 一律替换为占位符，并给出明确警告提醒手动补图
+- **沿用 v1.9.5**：基于页面状态轮询的登录检测（不再固定等 5 秒）；重写腾讯云 / 华为云 / 51CTO / 阿里云编辑器适配（Monaco `div.cm-content`、iframe `body[contenteditable]`、纯 textarea）；选择器外部化到 `platforms/*.json`；发布后阅后校验
 - **商务合作入口**：左侧栏新增「商务合作」，两枚邮箱均为 `mailto:` 直达
 - **README / Release 规范**：README 只保留当前版本说明、安装使用与商务合作；历史版本更新说明统一放在 [Releases](https://github.com/xingguangYan/freeflow/releases)
-- **稳定性**：沿用 v1.9.3 的消息中心真实接口解析、数据采集接口字段映射、编辑器撤销/空格/保存竞态修复
 
 > 历史版本更新说明见 [GitHub Releases](https://github.com/xingguangYan/freeflow/releases)。
 

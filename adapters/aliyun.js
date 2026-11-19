@@ -43,6 +43,11 @@ module.exports = {
   },
 
   async fillContent(page, ctx, log) {
+    const ok = await this._fillBody(page, ctx, log);
+    if (ok) await base.fixImageLinks(page);
+    return ok;
+  },
+  async _fillBody(page, ctx, log) {
     // data-testid 优先，其次 contenteditable / ProseMirror 等通用
     for (const s of this.contentSelectors) {
       const loc = page.locator(s).first();
