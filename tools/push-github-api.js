@@ -45,13 +45,15 @@ function gitBin(...args) { return execSync('git ' + args.join(' '), { maxBuffer:
   console.log('远端分支：' + branch + ' @ ' + remoteSha);
 
   // 2) 本地需要推送的提交（正序逐个还原）
-  const revList = git('rev-list', '--reverse', remoteSha + '..HEAD').split('\n').filter(Boolean);
+  // 若远端 sha 是 REST 重建出来的（本地不存在），用 BASE_SHA 指明与之等价的本地提交
+  const baseCommit = process.env.BASE_SHA || remoteSha;
+  const revList = git('rev-list', '--reverse', baseCommit + '..HEAD').split('\n').filter(Boolean);
   if (!revList.length) { console.log('本地与远端一致，无需推送'); process.exit(0); }
   console.log('本地需推送提交数：' + revList.length);
 
   const shaMap = {}; // 原始 sha -> 重建 sha（供标签对齐用）
   let parentSha = remoteSha;
-  let parentTreeSha = git('show', '-s', '--format=%T', remoteSha);
+  let parentTreeSha = git('show', '-s', '--format=%T', baseCommit);
 
   for (const sha of revList) {
     const treeSha = git('show', '-s', '--format=%T', sha);
