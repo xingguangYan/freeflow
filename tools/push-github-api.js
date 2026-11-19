@@ -67,8 +67,9 @@ function gitBin(...args) { return execSync('git ' + args.join(' '), { maxBuffer:
         console.log('   del  ' + f);
         continue;
       }
-      const [ mode, type, objSha, ...rest ] = ls.split(/\s+/);
-      const p = rest.join(' ');
+      const [ meta, ...rest ] = ls.split('\t');
+      const p = rest.join('\t');
+      const [ mode, type, objSha ] = meta.split(/\s+/);
       if (type !== 'blob') { console.warn('未处理类型 ' + type + '：' + p); continue; }
       const content = gitBin('show', sha + ':' + p);
       const blobResp = await req('POST', `/repos/${repo}/git/blobs`, { content: content.toString('base64'), encoding: 'base64' });
