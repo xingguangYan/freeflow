@@ -17,8 +17,6 @@ Freeflow drives **your own accounts** through browser automation. It cracks noth
 
 ---
 
-## Latest release: v1.9.4
-
 ## Latest release: v1.9.6
 
 - **Cross-platform image garbling fixed**: pasted images used to show up as broken pictures or a wall of base64 letters on several platforms. Two-layer cleanup now: Markdown payloads strip `data:` / local image links (`sanitizeMdImages`), and after filling, a page-wide scan (`fixImageLinks`, main document + every iframe) replaces any `<img>` still pointing at a local path or `data:` URI with a placeholder — with an explicit warning so you can re-upload manually
