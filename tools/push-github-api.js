@@ -60,7 +60,7 @@ function gitBin(...args) { return execSync('git ' + args.join(' '), { maxBuffer:
 
     const treeItems = [];
     for (const f of changed) {
-      const ls = git('ls-tree', '-r', '--format=%(objectmode) %(objecttype) %(objectname) %(path)', treeSha, '--', f);
+      const ls = git('ls-tree', '-r', treeSha, '--', f);
       if (!ls) {
         // 提交触及但新树中不存在 = 该提交删除了此文件
         treeItems.push({ path: f, mode: '100644', type: 'blob', sha: null });
