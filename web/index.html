@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>自由发 · 网页版 — 多平台一键发布</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="logo">自</span><span class="brand-name">自由发 <em>Web</em></span><span class="ver">v1.9.7</span></div>
+  <div class="conn">
+    <span class="dot" id="connDot"></span>
+    <input id="engineUrl" value="http://localhost:8917" spellcheck="false" title="连接电脑端引擎">
+    <button id="btnConnect" class="btn primary" data-i18n="connect">连接引擎</button>
+    <button id="btnLocal" class="btn ghost" data-i18n="useLocal">本机</button>
+  </div>
+  <div class="top-actions">
+    <select id="themeSelect" title="theme">
+      <option value="light" data-i18n="themeLight">浅色</option>
+      <option value="dark" data-i18n="themeDark">深色</option>
+      <option value="blue">Blue</option>
+      <option value="green">Green</option>
+      <option value="rose">Rose</option>
+    </select>
+    <button id="btnLang" class="btn ghost" title="中文 / English">中文</button>
+  </div>
+</header>
+<main class="layout">
+  <!-- 左侧：平台与账号 -->
+  <section class="col-platforms">
+    <div class="panel-head">
+      <h2 data-i18n="platforms">平台账号</h2>
+      <button id="btnSelectAll" class="btn small" data-i18n="selectAll">全选</button>
+      <button id="btnSelectNone" class="btn small ghost" data-i18n="selectNone">清空</button>
+    </div>
+    <input id="platformSearch" class="search" placeholder="搜索平台 / 账号" data-i18n-ph="searchPh">
+    <div class="chips" id="groupChips"></div>
+    <div class="platform-list" id="platformList"></div>
+    <div class="panel-foot">
+      <button id="btnCheckAll" class="btn small ghost" data-i18n="checkAllLogin">一键检测登录</button>
+    </div>
+  </section>
+
+  <!-- 中间：编辑器 -->
+  <section class="col-editor">
+    <div class="panel-head">
+      <h2 data-i18n="editor">内容编辑</h2>
+      <select id="contentType" class="mini">
+        <option value="article" data-i18n="ctArticle">图文</option>
+        <option value="video" data-i18n="ctVideo">视频</option>
+        <option value="audio" data-i18n="ctAudio">音频</option>
+      </select>
+      <button id="btnSaveDraft" class="btn small primary" data-i18n="saveDraft">保存草稿</button>
+    </div>
+    <div class="editor-body">
+      <input id="artTitle" class="title-input" placeholder="标题" data-i18n-ph="titlePh">
+      <input id="artSummary" class="summary-input" placeholder="摘要（选填，部分平台用作描述）" data-i18n-ph="summaryPh">
+      <input id="artTags" class="tags-input" placeholder="标签，逗号分隔（选填）" data-i18n-ph="tagsPh">
+      <div class="cover-row">
+        <div class="dropzone" id="coverZone">
+          <span data-i18n="coverHint">点击或拖拽上传封面（选填）</span>
+          <img id="coverPreview" alt="">
+        </div>
+        <div class="cover-ops">
+          <button id="btnPickCover" class="btn small" data-i18n="pickCover">选择图片</button>
+          <button id="btnClearCover" class="btn small ghost" data-i18n="clearCover">清除</button>
+          <span class="hint" data-i18n="coverTip">支持本地上传，随内容一起发布</span>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button class="tool" data-fmt="bold" title="加粗"><b>B</b></button>
+        <button class="tool" data-fmt="italic" title="斜体"><i>I</i></button>
+        <button class="tool" data-fmt="h2" title="标题">H2</button>
+        <button class="tool" data-fmt="quote" title="引用">❝</button>
+        <button class="tool" data-fmt="list" title="列表">☰</button>
+        <button class="tool" data-fmt="code" title="代码">&lt;/&gt;</button>
+        <span class="sep"></span>
+        <button class="tool" id="btnInsImage" title="插入素材库图片" data-i18n="insImage">图片</button>
+        <button class="tool" id="btnUploadIns" title="本地上传并插入" data-i18n="uploadIns">上传</button>
+      </div>
+      <textarea id="artContent" class="content-input" placeholder="在此编写正文（支持 Markdown 与 HTML 混排）。上传的图片会自动加入素材库并可插入正文。" data-i18n-ph="contentPh"></textarea>
+      <div class="counter"><span id="charCount">0</span> <span data-i18n="chars">字</span></div>
+    </div>
+    <div class="drafts">
+      <div class="panel-head"><h3 data-i18n="drafts">草稿箱</h3><button id="btnRefreshDrafts" class="btn small ghost">↻</button></div>
+      <div class="draft-list" id="draftList"></div>
+    </div>
+  </section>
+
+  <!-- 右侧：发布 + 打赏 -->
+  <section class="col-publish">
+    <div class="panel-head"><h2 data-i18n="publish">一键发布</h2></div>
+    <div class="publish-targets" id="publishTargets"></div>
+    <div class="publish-ops">
+      <label class="switch-line"><input type="checkbox" id="schedEnable"><span data-i18n="sched">定时发布</span> <input type="datetime-local" id="schedAt" class="mini"></label>
+      <button id="btnPublish" class="btn primary big" data-i18n="publishNow">立即一键发布</button>
+    </div>
+    <div class="progress" id="publishProgress"></div>
+    <div class="log-box" id="logBox"></div>
+    <div class="tip-box">
+      <img src="assets/alipay_qr.png" alt="支付宝打赏码">
+      <b data-i18n="donateTitle">请作者喝杯咖啡</b>
+      <span data-i18n="donateText">工具对你有帮助的话，扫码支持一下，这是我继续更新的动力 :)</span>
+    </div>
+    <div class="biz-box">
+      <b data-i18n="biz">商务合作</b>
+      <a href="mailto:xingguangyan0703@gmail.com">xingguangyan0703@gmail.com</a>
+      <a href="mailto:346049806@qq.com">346049806@qq.com</a>
+    </div>
+  </section>
+</main>
+<footer class="foot">
+  <span data-i18n="footHint">网页版连接本机或局域网电脑端的「自由发」引擎来执行发布；先在电脑上启动桌面版。</span>
+  <span>© 2026 自由发 Freeflow · <a href="https://github.com/xingguangYan/freeflow" target="_blank">GitHub</a> · <a href="https://gitcode.com/qq_31988139/freeflow" target="_blank">GitCode</a></span>
+</footer>
+<input type="file" id="filePick" accept="image/*" hidden>
+<script src="app.js"></script>
+</body>
+</html>

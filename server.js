@@ -19,6 +19,8 @@ app.use((req, res, next) => {
 });
 app.use(express.json({ limit: '600mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+// v1.9.7 网页版：同局域网任何浏览器打开 http://<电脑IP>:8917/web 即可一键发布
+app.use('/web', express.static(path.join(__dirname, 'web')));
 app.use('/materials', express.static(MATERIALS));
 
 const sessions = new Map();
