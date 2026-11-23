@@ -17,14 +17,21 @@ Freeflow drives **your own accounts** through browser automation. It cracks noth
 
 ---
 
-## Latest release: v1.9.4
-
-## Latest release: v1.9.6
+## Latest release: v1.9.7
 
 - **Cross-platform image garbling fixed**: pasted images used to show up as broken pictures or a wall of base64 letters on several platforms. Two-layer cleanup now: Markdown payloads strip `data:` / local image links (`sanitizeMdImages`), and after filling, a page-wide scan (`fixImageLinks`, main document + every iframe) replaces any `<img>` still pointing at a local path or `data:` URI with a placeholder — with an explicit warning so you can re-upload manually
 - **v1.9.5 carried over**: DOM-state login polling (no fixed 5s wait), rewritten adapters for Tencent Cloud / Huawei Cloud / 51CTO / Aliyun editors (Monaco `div.cm-content`, iframe `body[contenteditable]`, plain textarea), externalized selector configs under `platforms/*.json`, read-back verification after publishing
 - **Business inquiries entry**: a "Business inquiries" block in the sidebar with two `mailto:` links
 - **README / Release policy**: README keeps only the current release notes, install & usage, and business contact; all older release notes live in [Releases](https://github.com/xingguangYan/freeflow/releases)
+
+**v1.9.7 highlights**
+
+- **Cloud platform login false-positive fixed (the big one)**: Tencent Cloud / Aliyun / 51CTO / Huawei Cloud used to see the login window close before you finished logging in. Root cause: their `loggedInUrl` pattern also matched the login page itself, so the very first polling tick declared success. Login detection is now layered — auth-path URLs are rejected outright; the target editor's key elements (`loginSuccessSelectors`) are the strongest positive signal; a `loggedInUrl` match only counts when the page's "Log in" entry button is gone; user-chrome signals (avatar / log-out) come next; the cookie fallback now requires **every** declared cookie (a WAF session cookie alone no longer counts). Login pages now point at the real auth pages (`cloud.tencent.com/login`, `account.aliyun.com/login/login.htm`, `blog.51cto.com/login`)
+- **New web edition**: open `http://<desktop-IP>:8917/web` from any browser on the same network — full one-click publishing UI with local image upload (drag & drop cover, insert images into the body), drafts, publish scheduling, live publish log, i18n (Chinese/English) and five themes. Alipay donation QR and business contact included
+- **Publish login flow**: publishing now uses the DOM-state login waiter that opens a separate detection tab and closes it the moment login is detected, instead of reusing the publish window
+- Regression: 13 new login-detection tests (`tools/test-login.js`); full suite green
+
+![Web edition](docs/web-selected.png)
 
 > Older release notes: [GitHub Releases](https://github.com/xingguangYan/freeflow/releases).
 
@@ -36,6 +43,7 @@ Freeflow drives **your own accounts** through browser automation. It cracks noth
 - **Operates your own accounts**: publishes by automating each platform's own web editor; nothing is cracked
 - **59 platforms**: 44 Chinese + 15 overseas (incl. Huawei Cloud / Tencent Cloud / Aliyun / 51CTO / OSChina / InfoQ developer blogs)
 - **Built-in browser core**: no system Chrome required — unzip and run
+- **Web edition**: any browser on the LAN can drive the desktop engine at `http://<desktop-IP>:8917/web`
 - **Three-tier fallback**: platform selectors → generic heuristics → clipboard manual mode, always with an explicit failure message
 - **Free & open source**: MIT license
 
@@ -70,6 +78,10 @@ If macOS blocks the first launch: right-click the app → Open, or run `xattr -c
 - iOS: `freeflow-ios.ipa`, sign with Sideloadly / AltStore (free signing lasts 7 days)
 
 The phone build is a "pocket editor + remote": join the same Wi-Fi and enter the desktop address (e.g. `192.168.1.10:8917`) in the status pill; accounts and publishing run on the desktop engine.
+
+### Web edition (v1.9.7+)
+
+With the desktop app running, open `http://<desktop-IP>:8917/web` (or `http://localhost:8917/web`) from any browser on the same network — no install needed. Write, upload local images, pick target platforms, and one-click publish; the execution still happens on the desktop engine, so all login states stay on your machine.
 
 ### Run from source
 
