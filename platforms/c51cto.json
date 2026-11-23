@@ -15,7 +15,7 @@
   "publishTexts": ["发布", "发表"],
   "dialogTexts": ["确定", "继续发布"],
   "loginSuccessSelectors": ["#title", "textarea[placeholder=\"请输入正文\"]", "button:has-text(\"发表\")"],
-  "loginUrl": "https://blog.51cto.com/",
+  "loginUrl": "https://blog.51cto.com/login",
   "loggedInUrl": "/blog\\.51cto\\.com/",
   "draftSavedSignal": "草稿已保存",
   "publishClickMethod": "pointer-events",

@@ -698,6 +698,7 @@ module.exports.push(
     loggedInUrl: /bbs\.huaweicloud\.com\/(blogs|usercenter)/,
     loginCookies: ['hwssotoken', 'HWWAFSESID'],
     editorUrls: ['https://bbs.huaweicloud.com/blogs/editor', 'https://bbs.huaweicloud.com/'],
+    loginSuccessSelectors: ['button:has-text("写博客")', 'button:has-text("发表")', 'input[placeholder*="标题"]'],
     titleSelectors: ['input[placeholder*="标题"]', 'textarea[placeholder*="标题"]', 'input[name="title"]'],
     contentSelectors: ['[contenteditable="true"]', '.ql-editor', '.ProseMirror', '.CodeMirror', 'textarea'],
     publishTexts: ['发布', '提交'],
@@ -707,41 +708,44 @@ module.exports.push(
   {
     id: 'tencentcloud', name: '腾讯云开发者社区', region: 'cn', group: '图文', color: '#0052d9',
     titleMax: 100,
-    loginUrl: 'https://cloud.tencent.com/developer',
+    loginUrl: 'https://cloud.tencent.com/login',
     loggedInUrl: /cloud\.tencent\.com\/developer/,
     loginCookies: ['qcloud_uin', 'skey'],
     editorUrls: ['https://cloud.tencent.com/developer/article/write', 'https://cloud.tencent.com/developer'],
+    loginSuccessSelectors: ['textarea[placeholder="请输入标题"]', 'textarea[placeholder*="标题"]', 'button:has-text("写博客")', 'button:has-text("发表")'],
     titleSelectors: ['input[placeholder*="标题"]', 'textarea[placeholder*="标题"]', 'input[name="title"]'],
     contentSelectors: ['.ProseMirror', '.ql-editor', '.CodeMirror', '[contenteditable="true"]', 'textarea'],
     publishTexts: ['发布', '提交'],
     contentType: 'richtext', noCoverUpload: false,
-    note: '腾讯云开发者社区文章编辑器。'
+    note: '腾讯云开发者社区文章编辑器。登录页为 cloud.tencent.com/login，登完跳回开发者后台。'
   },
   {
     id: 'aliyun', name: '阿里云开发者社区', region: 'cn', group: '图文', color: '#ff6a00',
     titleMax: 100,
-    loginUrl: 'https://developer.aliyun.com/',
+    loginUrl: 'https://account.aliyun.com/login/login.htm',
     loggedInUrl: /developer\.aliyun\.com/,
     loginCookies: ['login_aliyunid', 'aliyun_site'],
     editorUrls: ['https://developer.aliyun.com/article/new', 'https://developer.aliyun.com/'],
+    loginSuccessSelectors: ['input[placeholder*="标题"]', 'input[name="title"]', 'button:has-text("提交")', 'button:has-text("发布")'],
     titleSelectors: ['input[placeholder*="标题"]', 'textarea[placeholder*="标题"]', 'input[name="title"]'],
     contentSelectors: ['.ProseMirror', '.ql-editor', '.CodeMirror', '[contenteditable="true"]', 'textarea'],
     publishTexts: ['发布', '提交'],
     contentType: 'richtext', noCoverUpload: false,
-    note: '阿里云开发者社区文章编辑器。'
+    note: '阿里云开发者社区文章编辑器。登录页为 account.aliyun.com，登完跳回开发者社区。'
   },
   {
     id: 'c51cto', name: '51CTO博客', region: 'cn', group: '图文', color: '#c8102e',
     titleMax: 100,
-    loginUrl: 'https://blog.51cto.com/',
+    loginUrl: 'https://blog.51cto.com/login',
     loggedInUrl: /blog\.51cto\.com/,
     loginCookies: ['_51cto_sso', '51cto_sso'],
     editorUrls: ['https://blog.51cto.com/blogger/publish', 'https://blog.51cto.com/'],
+    loginSuccessSelectors: ['#title', 'input[placeholder*="标题"]', 'button:has-text("发布")', 'button:has-text("发表")'],
     titleSelectors: ['input[placeholder*="标题"]', 'textarea[placeholder*="标题"]', 'input[name="title"]'],
     contentSelectors: ['.CodeMirror', '.cm-content', '.ProseMirror', '[contenteditable="true"]', 'textarea'],
     publishTexts: ['发布', '发表'],
     contentType: 'richtext', noCoverUpload: false,
-    note: '51CTO 博客发布页。'
+    note: '51CTO 博客发布页。登录页为 blog.51cto.com/login。'
   },
   {
     id: 'oschina', name: '开源中国', region: 'cn', group: '图文', color: '#3c9c2b',

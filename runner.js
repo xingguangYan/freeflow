@@ -34,18 +34,20 @@ async function waitForLogin(ctx, page, platform, accountId, minutes = 5) {
  
  // 基于 DOM 状态变化的登录检测：不再用固定 sleep 判断成功，而是轮询页面关键元素出现 / URL 跳转 / 登录墙消失。
  async function checkLoginByDom(page, platform) {
+  const url = page.url();
+  // 0) 还在鉴权路径上 → 未登录（此前登录页自身命中 loggedInUrl 即被误判成功，如 cloud.tencent.com/developer）
+  if (auto.onAuthPath(url)) return false;
    // 1) 平台 loginSuccessSelectors 出现（适配器声明的编辑器页关键元素，如标题输入框、写博客按钮）
-   const ad = auto.adapterOf(platform);
-   const successSels = (ad && ad.loginSuccessSelectors) || platform.loginSuccessSelectors || [];
+  const successSels = auto.loginSuccessSelectorsOf(platform);
    for (const s of successSels) {
      try {
        const loc = page.locator(s).first();
        if (await loc.count().catch(() => false) && await loc.isVisible().catch(() => false)) return true;
      } catch { /* 跨域/瞬时失败 */ }
    }
-   // 2) URL 从登录页跳转到目标发布页路径
+  // 2) URL 从登录页跳转到目标发布页路径：登录入口按钮仍在 → 其实还没登录
    try {
-     if (platform.loggedInUrl && platform.loggedInUrl.test(page.url())) return true;
+    if (platform.loggedInUrl && platform.loggedInUrl.test(url) && !(await auto.pageHasLoginEntry(page))) return true;
    } catch { /* 正则异常 */ }
    // 3) 登录按钮/扫码弹窗消失，且出现用户头像或退出登录
    try {
@@ -131,7 +133,7 @@ async function publishToAccount(account, article, coverPath) {
   }
   // 登录态检查：撞到登录墙就打开登录页等用户登录，登完自动重进编辑器继续发
   if (await auto.hitLoginWall(ctx, platform, page)) {
-    const loggedIn = await waitForLogin(ctx, page, platform, account.id, 5);
+    const loggedIn = await waitForLoginV2(ctx, page, platform, account.id, 5);
     if (!loggedIn) {
       await auto.closeCtx(ctx);
       log('', account.id, 'error', '登录已过期，请重新登录');

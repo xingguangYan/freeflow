@@ -15,7 +15,7 @@
   "publishTexts": ["发布", "提交"],
   "dialogTexts": ["确定", "继续发布"],
   "loginSuccessSelectors": ["input[placeholder*=\"标题\"]", "button:has-text(\"提交\")", "button:has-text(\"发布\")"],
-  "loginUrl": "https://developer.aliyun.com/",
+  "loginUrl": "https://account.aliyun.com/login/login.htm",
   "loggedInUrl": "/developer\\.aliyun\\.com/",
   "preferDataTestid": true,
   "noDirectApi": false,

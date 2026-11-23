@@ -15,7 +15,7 @@
   "publishTexts": ["发布", "提交"],
   "dialogTexts": ["确定", "继续发布"],
   "loginSuccessSelectors": ["textarea[placeholder=\"请输入标题\"]", "button:has-text(\"写博客\")", "button:has-text(\"发表\")"],
-  "loginUrl": "https://cloud.tencent.com/developer",
+  "loginUrl": "https://cloud.tencent.com/login",
   "loggedInUrl": "/cloud\\.tencent\\.com\\/developer/",
   "antiCrawl": "edgeone",
   "noDirectApi": true,

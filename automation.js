@@ -147,8 +147,44 @@ async function hasLoginCookies(ctx, platform) {
     if (!need.length) return false;
     const cookies = await ctx.cookies();
     const names = new Set(cookies.map(c => c.name));
-    return need.some(n => names.has(n));
+    // 保守判断：要求所有声明 cookie 都在。need.some 曾把匿名会话/WAF cookie
+    // （如华为云 HWWAFSESID）误判成登录态，导致登录窗口提前关闭。
+    return need.every(n => names.has(n));
   } catch { return false; }
+}
+// 页面是否仍展示「登录」入口按钮（有 → 处于未登录态）。
+// 只匹配文案恰为 登录/登陆/Log in/Sign in 的可见元素，避免误伤正文里的「登录已失效」等提示。
+async function pageHasLoginEntry(page) {
+  try {
+    return await page.evaluate(() => {
+      const RE = /^(登录|登陆|Log\s?in|Sign\s?in)$/i;
+      const els = document.querySelectorAll('button, a, [role="button"], span, div');
+      for (const el of els) {
+        const t = (el.textContent || '').trim();
+        if (t.length > 12 || !RE.test(t)) continue;
+        const r = el.getBoundingClientRect();
+        if (r.width > 0 && r.height > 0) return true;
+      }
+      return false;
+    });
+  } catch { return false; }
+}
+// 页面是否已有用户态特征（头像区/退出登录/个人中心文案）
+async function pageHasUserChrome(page) {
+  try {
+    const txt = await page.evaluate(() => ((document.body && document.body.innerText) || '').slice(0, 4000));
+    return /退出登录|注销|个人中心|我的主页/.test(txt);
+  } catch { return false; }
+}
+// URL 还停留在鉴权路径（登录/注册/注销）→ 一定还没登完
+function onAuthPath(url) {
+  return /login|signin|sign[-_]?in|passport|logout|register/i.test(url || '');
+}
+// 汇总登录成功选择器：适配器声明 > platforms.js 声明
+function loginSuccessSelectorsOf(platform) {
+  const ad = adapterOf(platform);
+  const sels = (ad && ad.loginSuccessSelectors) || (platform && platform.loginSuccessSelectors) || [];
+  return Array.isArray(sels) ? sels : [];
 }
 async function looksLoggedIn(ctx, platform, url) {
   try { if (platform.loggedInUrl && platform.loggedInUrl.test(url || '')) return true; } catch { /* 正则异常 */ }
@@ -164,14 +200,29 @@ async function pageHasLoginWall(page) {
 // 发布时判断是否撞登录墙：网址像登录页，或页面直接提示重新登录。
 async function hitLoginWall(ctx, platform, page) {
   const url = page.url();
-  if (/login|signin|sign[-_]?in|passport/i.test(url)) return true;
+  if (onAuthPath(url)) return true;
   return await pageHasLoginWall(page);
 }
 // 带页面上下文的登录判断：URL 命中后台优先，其次排除登录墙，最后才看 cookie。
 async function checkLoggedIn(ctx, platform, page) {
   const url = page.url();
-  try { if (platform.loggedInUrl && platform.loggedInUrl.test(url)) return true; } catch { /* */ }
+  // 0) 还在鉴权路径上 → 未登录（此前登录页自身命中 loggedInUrl 即被误判成功）
+  if (onAuthPath(url)) return false;
+  // 1) 目标发布页关键元素出现（最强信号：如腾讯云标题输入框、华为云「写博客」按钮）
+  for (const s of loginSuccessSelectorsOf(platform)) {
+    try {
+      const loc = page.locator(s).first();
+      if (await loc.count().catch(() => false) && await loc.isVisible().catch(() => false)) return true;
+    } catch { /* 跨域/瞬时失败 */ }
+  }
   if (await pageHasLoginWall(page)) return false;
+  // 2) URL 命中后台，且页面上「登录」入口按钮已消失（排除用首页当登录入口的平台）
+  try {
+    if (platform.loggedInUrl && platform.loggedInUrl.test(url) && !(await pageHasLoginEntry(page))) return true;
+  } catch { /* */ }
+  // 3) 用户态特征（头像区/退出登录/个人中心）
+  if (await pageHasUserChrome(page)) return true;
+  // 4) cookie 兜底
   return await hasLoginCookies(ctx, platform);
 }
 
@@ -887,6 +938,7 @@ module.exports = {
   launch, profileDir, clickIfAny, waitForPopup, pickVisible, closeCtx,
   pickVisibleIn, waitForEditor, pasteHtml,
   hasLoginCookies, looksLoggedIn, hitLoginWall, checkLoggedIn, pageHasLoginWall, inlineLocalImages,
+  pageHasLoginEntry, pageHasUserChrome, onAuthPath, loginSuccessSelectorsOf,
   htmlToText, htmlToMd, mdToHtml, fillTitle, fillContent, uploadCover, clickPublish, clickPublishRetry, clickConfirm,
   clickTextButton, clickPreviewThenPublish,
  waitForPublishSuccess,
