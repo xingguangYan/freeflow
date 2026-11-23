@@ -21,7 +21,7 @@ Freeflow drives **your own accounts** through browser automation. It cracks noth
 
 **v1.9.8 highlights**
 
-- **Public web edition**: the web UI is now a real public site anyone can open — <https://xingguangYan.github.io/freeflow/> (auto-deployed from every release tag). It keeps working in **standalone mode** for first-time visitors (write, browser-local drafts, export Markdown/HTML) and switches to full publishing the moment you point it at your own desktop engine. A ready-to-upload ModelScope Space wrapper is included under `modelspace/` for a China-hosted mirror
+- **Public web edition**: the web UI is now a real public site anyone can open — <https://xingguangyan.github.io/freeflow/> (auto-deployed from every release tag). It keeps working in **standalone mode** for first-time visitors (write, browser-local drafts, export Markdown/HTML) and switches to full publishing the moment you point it at your own desktop engine. A ready-to-upload ModelScope Space wrapper is included under `modelspace/` for a China-hosted mirror
 - **Website flow**: landing hero with a "how to use" guide, engine-connection bar with status, standalone/connected mode badge
 
 - **Cross-platform image garbling fixed**: pasted images used to show up as broken pictures or a wall of base64 letters on several platforms. Two-layer cleanup now: Markdown payloads strip `data:` / local image links (`sanitizeMdImages`), and after filling, a page-wide scan (`fixImageLinks`, main document + every iframe) replaces any `<img>` still pointing at a local path or `data:` URI with a placeholder — with an explicit warning so you can re-upload manually
@@ -86,7 +86,7 @@ The phone build is a "pocket editor + remote": join the same Wi-Fi and enter the
 
 ### Web edition (v1.9.7+)
 
-The public website: **<https://xingguangYan.github.io/freeflow/>** — open it from any browser, no install needed. It works standalone (write, browser-local drafts, Markdown/HTML export); to publish, connect it to your running desktop engine with the bar at the top — `http://localhost:8917` on the same machine, `http://<desktop-IP>:8917` from another device on the LAN. Execution still happens on the desktop engine, so all login states stay on your machine.
+The public website: **<https://xingguangyan.github.io/freeflow/>** — open it from any browser, no install needed. It works standalone (write, browser-local drafts, Markdown/HTML export); to publish, connect it to your running desktop engine with the bar at the top — `http://localhost:8917` on the same machine, `http://<desktop-IP>:8917` from another device on the LAN. Execution still happens on the desktop engine, so all login states stay on your machine.
 
 China-hosted mirror (ModelScope): a ready-to-upload Space wrapper lives under `modelspace/` — create a Gradio Space at <https://modelscope.cn/studio> with your account, upload the three files plus the `web/` folder, and it goes live on a `modelscope.cn` URL. Updates: re-upload `modelspace/web/`.
 
