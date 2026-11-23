@@ -20,3 +20,7 @@ android/local.properties
 freeflow.keystore
 check.apk
 .test-data-real/
+
+# ModelScope Space 部署：本地 git 工作副本 + 本地令牌（不入库）
+.ms-studio/
+.modelscope.local.json

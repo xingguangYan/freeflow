@@ -88,7 +88,7 @@ The phone build is a "pocket editor + remote": join the same Wi-Fi and enter the
 
 The public website: **<https://xingguangyan.github.io/freeflow/>** — open it from any browser, no install needed. It works standalone (write, browser-local drafts, Markdown/HTML export); to publish, connect it to your running desktop engine with the bar at the top — `http://localhost:8917` on the same machine, `http://<desktop-IP>:8917` from another device on the LAN. Execution still happens on the desktop engine, so all login states stay on your machine.
 
-China-hosted mirror (ModelScope): a ready-to-upload Space wrapper lives under `modelspace/` — create a Gradio Space at <https://modelscope.cn/studio> with your account, upload the three files plus the `web/` folder, and it goes live on a `modelscope.cn` URL. Updates: re-upload `modelspace/web/`.
+China-hosted mirror (ModelScope Space): **<https://modelscope.cn/studios/xg346049806/freeflow>** — the same web UI served from ModelScope's free Gradio hosting (`modelspace/` in this repo); handy when GitHub Pages is slow to reach from mainland China.
 
 Self-host note: with the desktop app running it's also served directly at `http://<desktop-IP>:8917/web` on your network.
 

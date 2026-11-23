@@ -1,6 +1,6 @@
 ---
 sdk: gradio
-sdk_version: 4.44.0
+sdk_version: 6.29.1
 title: 自由发 Freeflow
 emoji: 🚀
 colorFrom: blue

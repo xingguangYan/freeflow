@@ -53,6 +53,15 @@
 
 ## 下载安装
 
+### 在线网页版（免安装）
+
+直接打开任一公网入口，无需下载：
+
+- 国内（ModelScope 创空间）：<https://modelscope.cn/studios/xg346049806/freeflow>
+- GitHub Pages：<https://xingguangyan.github.io/freeflow/>
+
+网页版可独立写作（草稿保存在本浏览器，可导出 Markdown / HTML）；要一键发布，在页面顶部填入电脑引擎地址（本机 `http://localhost:8917`，局域网 `http://<电脑IP>:8917`）点「连接引擎」即可。
+
 ### Windows
 
 到 [Releases](https://github.com/xingguangYan/freeflow/releases/latest) 下载 `freeflow-win64.zip`，解压后双击 `自由发\自由发.exe`。免安装，内置浏览器内核。
