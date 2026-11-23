@@ -8,7 +8,7 @@
 </head>
 <body>
 <header class="topbar">
-  <div class="brand"><span class="logo">自</span><span class="brand-name">自由发 <em>Web</em></span><span class="ver">v1.9.7</span></div>
+  <div class="brand"><span class="logo">自</span><span class="brand-name">自由发 <em>Web</em></span><span class="ver">v1.9.8</span></div>
   <div class="conn">
     <span class="dot" id="connDot"></span>
     <input id="engineUrl" value="http://localhost:8917" spellcheck="false" title="连接电脑端引擎">
@@ -26,6 +26,23 @@
     <button id="btnLang" class="btn ghost" title="中文 / English">中文</button>
   </div>
 </header>
+<section class="hero" id="heroBox">
+  <div class="hero-inner">
+    <h1>自由发 · 多平台一键发布</h1>
+    <p class="hero-sub" data-i18n="heroSub">一个页面写好内容，勾选平台，一键发到 59 个平台。完全免费、开源；发布在你自己电脑上的浏览器里完成，账号与数据不经云端。</p>
+    <div class="hero-mode" id="modeBanner">独立模式</div>
+    <div class="hero-actions">
+      <a class="btn primary" href="https://github.com/xingguangYan/freeflow/releases/latest" target="_blank" data-i18n="heroDl">免费下载桌面版（获得发布能力）</a>
+      <button class="btn" id="btnHowTo" data-i18n="heroHow">如何使用</button>
+    </div>
+    <div class="hero-steps" id="howToBox" hidden>
+      <div><b>1</b><span data-i18n="step1">下载并在电脑上启动桌面版（绿色免安装）</span></div>
+      <div><b>2</b><span data-i18n="step2">在本页顶部地址栏填入电脑局域网地址，如 http://192.168.1.10:8917（本机就是 http://localhost:8917）</span></div>
+      <div><b>3</b><span data-i18n="step3">点「连接引擎」，左侧即可看到你所有已登录账号，直接一键发布</span></div>
+      <div><b>·</b><span data-i18n="step0">没连引擎时也能写文章：草稿保存在本浏览器，可导出 Markdown / HTML</span></div>
+    </div>
+  </div>
+</section>
 <main class="layout">
   <!-- 左侧：平台与账号 -->
   <section class="col-platforms">
@@ -84,6 +101,10 @@
     </div>
     <div class="drafts">
       <div class="panel-head"><h3 data-i18n="drafts">草稿箱</h3><button id="btnRefreshDrafts" class="btn small ghost">↻</button></div>
+      <div class="draft-ops">
+        <button id="btnExportMd" class="btn small ghost" data-i18n="exportMd">导出 Markdown</button>
+        <button id="btnExportHtml" class="btn small ghost" data-i18n="exportHtml">导出 HTML</button>
+      </div>
       <div class="draft-list" id="draftList"></div>
     </div>
   </section>

@@ -23,6 +23,15 @@ const I18N = {
   biz: { zh: '商务合作', en: 'Business' },
   footHint: { zh: '网页版连接本机或局域网电脑端的「自由发」引擎来执行发布；先在电脑上启动桌面版。', en: 'The web edition talks to the Freeflow engine on your computer; start the desktop app first.' },
   themeLight: { zh: '浅色', en: 'Light' }, themeDark: { zh: '深色', en: 'Dark' },
+  heroSub: { zh: '一个页面写好内容，勾选平台，一键发到 59 个平台。完全免费、开源；发布在你自己电脑上的浏览器里完成，账号与数据不经云端。', en: 'Write once, tick the platforms, publish to 59 platforms in one click. Free & open source; publishing runs in the browser on your own computer — no cloud backend.' },
+  heroDl: { zh: '免费下载桌面版（获得发布能力）', en: 'Download desktop app (enables publishing)' },
+  heroHow: { zh: '如何使用', en: 'How to use' },
+  step0: { zh: '没连引擎时也能写文章：草稿保存在本浏览器，可导出 Markdown / HTML', en: 'Without an engine you can still write: drafts save in this browser, export as Markdown / HTML' },
+  step1: { zh: '下载并在电脑上启动桌面版（绿色免安装）', en: 'Download and start the desktop app on your computer (portable)' },
+  step2: { zh: '在本页顶部地址栏填入电脑局域网地址，如 http://192.168.1.10:8917（本机就是 http://localhost:8917）', en: 'Enter the desktop address in the bar above, e.g. http://192.168.1.10:8917 (or http://localhost:8917)' },
+  step3: { zh: '点「连接引擎」，左侧即可看到你所有已登录账号，直接一键发布', en: 'Click Connect — your logged-in accounts appear on the left, ready to publish' },
+  exportMd: { zh: '导出 Markdown', en: 'Export Markdown' },
+  exportHtml: { zh: '导出 HTML', en: 'Export HTML' },
 };
 let lang = localStorage.getItem('ff_web_lang') || 'zh';
 let theme = localStorage.getItem('ff_web_theme') || 'light';
@@ -32,6 +41,47 @@ let selected = new Set();          // 选中的账号 id
 let curArticle = null;             // 当前编辑的文章对象
 let groupFilter = '', kw = '';
 let logStartTs = 0, logTimer = null, pollTimer = null;
+let connected = false; // false = 独立模式（浏览器本地写作），true = 已连引擎（可发布）
+// 独立模式草稿箱：存在 localStorage，引擎模式用服务端 /api/articles
+const localDrafts = {
+  load: () => { try { return JSON.parse(localStorage.getItem('ff_web_drafts') || '[]'); } catch { return []; } },
+  save: (list) => { try { localStorage.setItem('ff_web_drafts', JSON.stringify(list.slice(-50))); } catch { /* */ } },
+};
+function setMode(isConn) {
+  connected = isConn;
+  $('#modeBanner').textContent = isConn ? ('已连接引擎 ' + API + ' · 可一键发布') : (lang === 'zh' ? '独立模式 · 发布需连接本机引擎' : 'Standalone · connect the engine to publish');
+  $('#modeBanner').className = 'hero-mode' + (isConn ? ' on' : '');
+  $('#heroBox').classList.toggle('slim', isConn);
+  if (isConn) { $('#howToBox').hidden = true; }
+}
+function mdToHtml(md) {
+  const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const lines = String(md || '').split(/\r?\n/);
+  let html = '', inList = false, inCode = false;
+  for (const ln of lines) {
+    if (/^```/.test(ln)) { inCode = !inCode; html += inCode ? '<pre><code>' : '</code></pre>'; continue; }
+    if (inCode) { html += esc(ln) + '\n'; continue; }
+    let l = ln.trim();
+    if (/^- /.test(l)) { if (!inList) { html += '<ul>'; inList = true; } html += '<li>' + esc(l.slice(2)) + '</li>'; continue; }
+    if (inList) { html += '</ul>'; inList = false; }
+    let m = /^(#{1,3})\s+(.*)$/.exec(l); if (m) { html += `<h${m[1].length}>${esc(m[2])}</h${m[1].length}>`; continue; }
+    if (l.startsWith('> ')) { html += '<blockquote>' + esc(l.slice(2)) + '</blockquote>'; continue; }
+    l = esc(l).replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img alt="$1" src="$2">').replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>');
+    html += l ? '<p>' + l + '</p>' : '';
+  }
+  if (inList) html += '</ul>';
+  return html;
+}
+function exportContent(kind) {
+  const title = $('#artTitle').value.trim() || (lang === 'zh' ? '未命名' : 'Untitled');
+  const content = $('#artContent').value;
+  const blob = kind === 'md'
+    ? new Blob(['# ' + title + '\n\n' + content], { type: 'text/markdown;charset=utf-8' })
+    : new Blob(['<!DOCTYPE html><meta charset="utf-8"><title>' + title + '</title><body style="font-family:sans-serif;max-width:720px;margin:40px auto;padding:0 16px">' + mdToHtml(content) + '</body>'], { type: 'text/html;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = title + '.' + kind;
+  document.body.appendChild(a); a.click(); a.remove();
+}
 
 function t(k) { return (I18N[k] && (I18N[k][lang] || I18N[k].zh)) || k; }
 function applyI18n() { $$('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); }); $$('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.dataset.i18nPh); }); $('#btnLang').textContent = lang === 'zh' ? 'English' : '中文'; }
@@ -62,9 +112,15 @@ async function connect(keep) {
     $('#connDot').classList.add('on');
     toast(`已连接引擎 ${API}：${platforms.length} 平台 / ${accounts.length} 账号`, 'ok');
     renderPlatforms(); renderDrafts(); renderTargets();
+    setMode(true);
     return true;
   } catch (e) {
     toast('连接引擎失败：' + e.message + '（确认电脑端「自由发」已启动）', 'error');
+    // 公网访客没有本地引擎：进入独立模式（本地草稿 + 导出），不阻塞使用
+    setMode(false);
+    platforms = []; accounts = []; materials = [];
+    drafts = localDrafts.load();
+    renderPlatforms(); renderDrafts(); renderTargets();
     return false;
   } finally { $('#btnConnect').disabled = false; }
 }
@@ -166,6 +222,16 @@ async function collectArticle() {
 async function saveDraft() {
   const art = await collectArticle();
   if (!art.title && !art.content) return toast('标题或正文不能都为空', 'warn');
+  if (!connected) {
+    // 独立模式：草稿存本浏览器（localStorage）
+    const list = localDrafts.load();
+    const item = { id: curArticle && curArticle.id || ('local_' + Date.now()), ...art, updatedAt: Date.now() };
+    const i = list.findIndex(x => x.id === item.id);
+    if (i !== -1) list[i] = item; else list.push(item);
+    localDrafts.save(list); drafts = list; curArticle = item;
+    renderDrafts(); toast(`草稿已保存到本浏览器：${item.title || '未命名'}`, 'ok');
+    return item;
+  }
   const body = { ...art };
   const saved = await api('/api/articles', { method: 'POST', body: JSON.stringify(body) });
   curArticle = saved;
@@ -182,8 +248,9 @@ function renderDrafts() {
     el.querySelector('.t').addEventListener('click', () => loadDraft(d));
     el.querySelector('.x').addEventListener('click', async ev => {
       ev.stopPropagation();
-      await api('/api/articles/' + d.id, { method: 'DELETE' });
-      drafts = await api('/api/articles'); renderDrafts(); toast('草稿已删除');
+      if (connected) { await api('/api/articles/' + d.id, { method: 'DELETE' }); drafts = await api('/api/articles'); }
+      else { localDrafts.save(localDrafts.load().filter(x => x.id !== d.id)); drafts = localDrafts.load(); }
+      renderDrafts(); toast('草稿已删除');
     });
     box.appendChild(el);
   }
@@ -250,7 +317,14 @@ $('#btnCheckAll').addEventListener('click', checkAllLogin);
 $('#contentType').addEventListener('change', renderPlatforms);
 $('#artContent').addEventListener('input', countChars);
 $('#btnSaveDraft').addEventListener('click', saveDraft);
-$('#btnRefreshDrafts').addEventListener('click', async () => { drafts = await api('/api/articles'); renderDrafts(); });
+$('#btnRefreshDrafts').addEventListener('click', async () => {
+  if (connected) { try { drafts = await api('/api/articles'); } catch { /* */ } }
+  else { drafts = localDrafts.load(); }
+  renderDrafts();
+});
+$('#btnHowTo').addEventListener('click', () => { const b = $('#howToBox'); b.hidden = !b.hidden; });
+$('#btnExportMd').addEventListener('click', () => exportContent('md'));
+$('#btnExportHtml').addEventListener('click', () => exportContent('html'));
 $('#coverZone').addEventListener('click', async () => { const m = await pickAndUpload(true); if (m) setCover(m); });
 $('#coverZone').addEventListener('dragover', e => { e.preventDefault(); $('#coverZone').classList.add('drag'); });
 $('#coverZone').addEventListener('dragleave', () => $('#coverZone').classList.remove('drag'));
