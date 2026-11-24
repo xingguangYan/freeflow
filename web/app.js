@@ -37,6 +37,13 @@ let lang = localStorage.getItem('ff_web_lang') || 'zh';
 let theme = localStorage.getItem('ff_web_theme') || 'light';
 let API = (localStorage.getItem('ff_web_engine') || 'http://localhost:8917').replace(/\/+$/, '');
 let platforms = [], accounts = [], materials = [], drafts = [];
+let staticPlatforms = []; // 公网独立模式兜底：静态平台清单（platforms.json）
+
+// 加载静态平台清单（与桌面端 platforms.js 同源，构建时生成）
+async function loadStaticPlatforms() {
+  try { const r = await fetch('platforms.json', { cache: 'no-cache' }); if (r.ok) staticPlatforms = await r.json(); }
+  catch (e) { /* 静默：旧站点无此文件 */ }
+}
 let selected = new Set();          // 选中的账号 id
 let curArticle = null;             // 当前编辑的文章对象
 let groupFilter = '', kw = '';
@@ -111,6 +118,12 @@ async function connect(keep) {
     drafts = await api('/api/articles');
     $('#connDot').classList.add('on');
     toast(`已连接引擎 ${API}：${platforms.length} 平台 / ${accounts.length} 账号`, 'ok');
+    // 独立模式下勾选的平台（pf:前缀）自动映射到对应账号
+    const pfSel = [...selected].filter(k => String(k).startsWith('pf:')).map(k => k.slice(3));
+    if (pfSel.length) {
+      selected = new Set([...selected].filter(k => !String(k).startsWith('pf:')));
+      accounts.filter(a => pfSel.includes(a.platformId)).forEach(a => selected.add(a.id));
+    }
     renderPlatforms(); renderDrafts(); renderTargets();
     setMode(true);
     return true;
@@ -118,7 +131,7 @@ async function connect(keep) {
     toast('连接引擎失败：' + e.message + '（确认电脑端「自由发」已启动）', 'error');
     // 公网访客没有本地引擎：进入独立模式（本地草稿 + 导出），不阻塞使用
     setMode(false);
-    platforms = []; accounts = []; materials = [];
+    platforms = staticPlatforms.slice(); accounts = []; materials = [];
     drafts = localDrafts.load();
     renderPlatforms(); renderDrafts(); renderTargets();
     return false;
@@ -136,36 +149,40 @@ function renderPlatforms() {
   $('#groupChips').innerHTML = groups.map(g => `<span class="chip ${groupFilter === g ? 'on' : ''}" data-g="${g}">${g}</span>`).join('');
   const typeMap = { article: '图文', video: '视频', audio: '音频' };
   const ct = $('#contentType').value;
-  for (const acc of accounts) {
-    const p = platforms.find(x => x.id === acc.platformId);
-    if (!p) continue;
-    if (kw && !(p.name + acc.name).toLowerCase().includes(kw)) continue;
+  for (const row of selRows()) {
+    const { p, acc, key } = row;
+    if (kw && !(p.name + (acc ? acc.name : '')).toLowerCase().includes(kw)) continue;
     if (groupFilter && (p.group || '其他') !== groupFilter) continue;
     const item = document.createElement('label');
     item.className = 'platform-item';
     const off = ct === 'video' ? !/视频|Video/.test(p.group || '') : false;
-    item.innerHTML = `<input type="checkbox" data-id="${acc.id}" ${selected.has(acc.id) ? 'checked' : ''}>
-      <span class="pi-name">${p.name}</span><span class="pi-sub">${acc.name} · ${typeMap[acc.type] || typeMap.article}</span>${statusBadge(acc.status)}`;
+    const sub = acc ? `${acc.name} · ${typeMap[acc.type] || typeMap.article}` : '勾选后连接引擎自动匹配账号';
+    item.innerHTML = `<input type="checkbox" data-id="${key}" ${selected.has(key) ? 'checked' : ''} ${off ? 'disabled' : ''}>
+      <span class="pi-name">${p.name}</span><span class="pi-sub">${sub}</span>${acc ? statusBadge(acc.status) : '<span class="badge waiting">待连接</span>'}`;
     item.querySelector('input').addEventListener('change', e => {
-      e.target.checked ? selected.add(acc.id) : selected.delete(acc.id);
+      e.target.checked ? selected.add(key) : selected.delete(key);
       renderTargets();
     });
     box.appendChild(item);
   }
-  if (!box.children.length) box.innerHTML = '<div style="color:var(--muted);font-size:12.5px;padding:8px">无匹配账号（可先在桌面版添加账号）</div>';
+  if (!box.children.length) box.innerHTML = '<div style="color:var(--muted);font-size:12.5px;padding:8px">无匹配平台 / 账号</div>';
+}
+// 可选择行：已连引擎按账号列；独立模式（未连引擎）按平台列，选中后连引擎会自动映射到账号
+function selRows() {
+  if (connected && accounts.length) return accounts.map(a => ({ acc: a, p: platforms.find(x => x.id === a.platformId), key: a.id })).filter(r => r.p);
+  return platforms.map(p => ({ acc: null, p, key: 'pf:' + p.id }));
 }
 function renderTargets() {
-  const names = accounts.filter(a => selected.has(a.id)).map(a => {
-    const p = platforms.find(x => x.id === a.platformId);
-    return p ? `${p.name}/${a.name}` : a.name;
-  });
+  const rows = selRows().filter(r => selected.has(r.key));
+  const names = rows.map(r => r.acc ? `${r.p.name}/${r.acc.name}` : r.p.name);
   $('#publishTargets').innerHTML = names.length
-    ? names.map(n => `<div>✓ ${n}</div>`).join('') + `<div style="margin-top:4px">共 ${names.length} 个目标</div>`
-    : '<div>尚未选择账号（在左侧勾选）</div>';
+    ? names.map(n => `<div>✓ ${n}</div>`).join('') + `<div style="margin-top:4px">共 ${names.length} 个目标${connected ? '' : ' · 独立模式，连接引擎后匹配账号'}</div>`
+    : '<div>尚未选择（在左侧勾选平台 / 账号）</div>';
   const btn = $('#btnPublish'); btn.disabled = !names.length;
   btn.textContent = t('publishNow') + `（${names.length}）`;
 }
 async function checkAllLogin() {
+  if (!connected) { toast('未连接引擎，无法检测登录态。请先连接本机引擎。', 'warn'); return; }
   toast('开始检测所有账号登录态…');
   try {
     await api('/api/accounts/check-all', { method: 'POST', body: JSON.stringify({}) });
@@ -269,6 +286,10 @@ function loadDraft(d) {
 async function publish() {
   const btn = $('#btnPublish'); btn.disabled = true;
   try {
+    if (!connected) {
+      toast(`已选 ${selected.size} 个平台。发布需要在电脑上启动「自由发」桌面版：在顶部地址栏填入引擎地址（本机 http://localhost:8917，局域网 http://<电脑IP>:8917）点「连接引擎」，勾选的平台会自动匹配已登录账号。`, 'warn');
+      return;
+    }
     const art = await saveDraft();
     const accountIds = [...selected];
     const sched = $('#schedEnable').checked ? new Date($('#schedAt').value).getTime() : null;
@@ -311,7 +332,7 @@ $('#btnLang').addEventListener('click', () => { lang = lang === 'zh' ? 'en' : 'z
 $('#themeSelect').addEventListener('change', e => applyTheme(e.target.value));
 $('#platformSearch').addEventListener('input', e => { kw = e.target.value.trim().toLowerCase(); renderPlatforms(); });
 $('#groupChips').addEventListener('click', e => { const c = e.target.closest('.chip'); if (!c) return; groupFilter = groupFilter === c.dataset.g ? '' : c.dataset.g; renderPlatforms(); });
-$('#btnSelectAll').addEventListener('click', () => { accounts.forEach(a => selected.add(a.id)); renderPlatforms(); renderTargets(); });
+$('#btnSelectAll').addEventListener('click', () => { selRows().forEach(r => selected.add(r.key)); renderPlatforms(); renderTargets(); });
 $('#btnSelectNone').addEventListener('click', () => { selected.clear(); renderPlatforms(); renderTargets(); });
 $('#btnCheckAll').addEventListener('click', checkAllLogin);
 $('#contentType').addEventListener('change', renderPlatforms);
@@ -354,4 +375,9 @@ $('#btnPublish').addEventListener('click', publish);
 
 // ---------- 初始化 ----------
 applyTheme(theme); applyI18n(); setEngine(API, true); countChars(); renderTargets();
-connect(true);
+(async () => {
+  // 先加载静态平台清单并渲染（公网访客无引擎也能看到全部平台并勾选），再尝试连接引擎
+  await loadStaticPlatforms();
+  if (!platforms.length) { platforms = staticPlatforms.slice(); renderPlatforms(); }
+  connect(true);
+})();
